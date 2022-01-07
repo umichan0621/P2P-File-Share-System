@@ -1,0 +1,14 @@
+QWidget:focus
+{
+    outline:none;
+}
+
+QWidget[Style='light']
+{
+    background-color:#f4f5f7;
+}
+
+QWidget[Style='dark']
+{
+    background-color:#343434;
+}

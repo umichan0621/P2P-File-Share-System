@@ -1,0 +1,308 @@
+/*整体背景色*/
+QWidget[Background='light']
+{
+	border-radius:4px;
+	background-color:#ffffff;
+}
+
+QWidget[Background='dark']
+{
+	border-radius:4px;
+	background-color:#343434;
+}
+/*整体背景色*/
+
+/*底部颜色*/
+QWidget[Bottom='light'],[Bottom='dark']
+{
+	border-radius:4px;
+	border-top-right-radius:0px;
+	border-top-left-radius:0px;
+}
+
+QWidget[Bottom='light']
+{
+	background-color:#f5f5f5;
+}
+
+QWidget[Bottom='dark']
+{
+	background-color:#4a4a4a;
+}
+/*底部颜色*/
+
+/*分割线*/
+QFrame[Line='light']
+{
+	border-top:2px solid #e4e7ed;
+}
+
+QFrame[Line='dark']
+{
+	border-top:2px solid #4a4a4a;
+}
+/*分割线*/
+
+/*取消*/
+QPushButton[Cancel='light'],[Cancel='dark']
+{
+	font-family:"Microsoft YaHei";
+	font-size:13px;
+	border-radius:4px;
+}
+
+QPushButton[Cancel='light']
+{
+	border:none;
+    background-color:#ffffff;
+    color:#606266;
+}
+
+QPushButton[Cancel='light']:hover
+{
+	border:1px solid #5b5bfa;
+    background-color:#efefff;
+    color:#5b5bfa;
+}
+
+QPushButton[Cancel='dark']
+{
+	border:none;
+    background-color:#5b5b5b;
+    color:#ffffff;
+}
+
+QPushButton[Cancel='dark']:hover
+{
+	border:1px solid #5b5bfa;
+    background-color:#333333;
+    color:#5b5bfa;
+}
+/*取消*/
+
+/*提交*/
+QPushButton[Submit='light'],[Submit='dark']
+{
+	font-family:"Microsoft YaHei";
+	font-size:13px;
+	font-weight:bold;
+	border-radius:4px;
+}
+
+QPushButton[Submit='light']
+{
+	border:none;
+    background-color:#5b5bfa;
+    color:#ffffff;
+}
+
+QPushButton[Submit='light']:hover
+{
+	border:1px solid #5b5bfa;
+    background-color:#efefff;
+    color:#5b5bfa;
+}
+
+QPushButton[Submit='dark']
+{
+	border:none;
+    background-color:#5b5bfa;
+    color:#ffffff;
+}
+
+QPushButton[Submit='dark']:hover
+{
+	border:1px solid #5b5bfa;
+    background-color:#333333;
+    color:#5b5bfa;
+}
+/*提交*/
+
+/*多行输入框*/
+QTextEdit[TextEdit='light'],[TextEdit='dark']
+{
+	font-family:"Microsoft YaHei";
+	font-size:12px;
+	border-radius:4px;
+	padding-left:10px;
+	padding-right:10px;
+	padding-top:2px;
+	padding-bottom:2px;
+}
+
+QTextEdit[TextEdit='light']
+{
+	color:#606266;
+	border:1px solid #e4e7ed;
+}
+
+QTextEdit[TextEdit='light']:hover
+{
+	border:1px solid #5b5bfa;
+}
+
+QTextEdit[TextEdit='light']:focus
+{
+	border:1px solid #5b5bfa;
+}
+
+QTextEdit[TextEdit='dark']
+{
+	color:#dbdbdb;
+	border:1px solid #5f5f5f;
+	background-color:#373737;
+}
+
+QTextEdit[TextEdit='dark']:hover
+{
+	border:1px solid #5b5bfa;
+}
+
+QTextEdit[TextEdit='dark']:focus
+{
+	border:1px solid #5b5bfa;
+}
+/*多行输入框*/
+
+/*单行输入框*/
+QLineEdit[LineEdit='light'],[LineEdit='dark']
+{
+	font-family:"Microsoft YaHei";
+	font-size:12px;
+	border-radius:4px;
+	border-top-right-radius:0px;
+	border-bottom-right-radius:0px;
+	padding-left:10px;
+	padding-right:10px;
+	padding-top:2px;
+	padding-bottom:2px;
+}
+
+QLineEdit[LineEdit='light']
+{
+	color:#606266;
+	border:1px solid #e4e7ed;
+}
+
+QLineEdit[LineEdit='light']:hover
+{
+	border:1px solid #5b5bfa;
+}
+
+QLineEdit[LineEdit='light']:focus
+{
+	border:1px solid #5b5bfa;
+}
+
+QLineEdit[LineEdit='dark']
+{
+	color:#dbdbdb;
+	border:1px solid #5f5f5f;
+	background-color:#373737;
+}
+
+QLineEdit[LineEdit='dark']:hover
+{
+	border:1px solid #5b5bfa;
+}
+
+QLineEdit[LineEdit='dark']:focus
+{
+	border:1px solid #5b5bfa;
+}
+/*单行输入框*/
+
+/*设置路径按钮*/
+QPushButton[SetPath='light'],[SetPath='dark']
+{
+	border-left:none;
+	border-radius:4px;
+	border-top-left-radius:0px;
+	border-bottom-left-radius:0px;
+	background-position:center; 
+	background-repeat:no-repeat;
+	background-image:url(image/folder);
+}
+QPushButton[SetPath='light']
+{
+	border:1px solid #e4e7ed;
+    background-color:#f5f7fa;
+}
+
+QPushButton[SetPath='light']:hover
+{
+	border:1px solid #5b5bfa;
+	background-color:transparent;
+}
+
+QPushButton[SetPath='dark']
+{
+	border:1px solid #5f5f5f;
+    background-color:#333333;
+}
+
+QPushButton[SetPath='dark']:hover
+{
+	border:1px solid #5b5bfa;
+	background-color:transparent;
+}
+/*设置路径按钮*/
+
+/*操作提示标签*/
+QLabel[LabelText='light'],[LabelText='dark']
+{
+	font-family:"Microsoft YaHei";
+	font-size:15px;
+	border:none;
+    background-color:transparent;
+	padding-left:3px;
+}
+
+QLabel[LabelText='light']
+{
+    color:#606266;
+}
+
+QLabel[LabelText='dark']
+{
+    color:#dbdbdb;
+}
+/*操作提示标签*/
+
+/*选择按钮*/
+QPushButton[SelectButton='unchoose_light'],[SelectButton='choose_light'],[SelectButton='unchoose_dark'],[SelectButton='choose_dark']
+{
+	font-family:"Microsoft YaHei";
+	font-size:15px;
+	border:none;
+	/*border-radius:0px;*/
+	background-color:transparent;
+}
+
+QPushButton[SelectButton='unchoose_light'],[SelectButton='unchoose_dark']:hover
+{
+    color:#5b5bfa;
+}
+
+QPushButton[SelectButton='choose_light'],[SelectButton='choose_dark']
+{
+	border-bottom:2px solid #5b5bfa;
+    color:#5b5bfa;
+}
+
+QPushButton[SelectButton='choose_light'],[SelectButton='choose_dark']:hover
+{
+	border-bottom:2px solid #5b5bfa;
+    color:#5b5bfa;
+}
+
+QPushButton[SelectButton='unchoose_light']
+{
+    color:#606266;
+}
+
+QPushButton[SelectButton='unchoose_dark']
+{
+    color:#a2a3a4;
+}
+/*选择按钮*/

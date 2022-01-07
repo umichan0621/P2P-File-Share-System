@@ -1,0 +1,252 @@
+/*分隔线*/
+QFrame[Line='light']
+{
+	border-top:2px solid #e5e5e5;
+}
+
+QFrame[Line='dark']
+{
+	border-top:2px solid #494949;
+}
+/*分隔线*/
+
+/*选择按钮*/
+QPushButton[Button='unchoose_light'],[Button='unchoose_dark'],[Button='choose_light'],[Button='choose_dark']
+{
+	font-family:"Microsoft YaHei";
+	font-size:20px;
+	border:none;
+	background-color:transparent;
+}
+
+QPushButton[Button='unchoose_light'],[Button='unchoose_dark']:hover
+{
+	color:#5b5bfa;
+}
+
+QPushButton[Button='choose_light'],[Button='choose_dark']
+{
+	border-bottom:2px solid #5b5bfa;
+    color:#5b5bfa;
+}
+
+QPushButton[Button='unchoose_light']
+{
+    color:#727272;
+}
+
+QPushButton[Button='unchoose_dark']
+{
+    color:#ffffff;
+}
+/*选择按钮*/
+
+/*QListWidget相关*/
+
+QListWidget
+{
+    border:none;
+}
+QListWidget::item
+{
+    border:1px solid #555555;
+    border-radius:7px;
+    margin-left:20px;
+    margin-right:20px;
+    margin-top:6px;
+}
+
+QListWidget::item:hover
+{ 
+    border:2px solid #5b5bfa;
+}
+
+QListWidget::item::selected
+{
+    border:2px solid #5b5bfa;
+}
+
+/*QListWidget的组件QListWidgetItem中Widget的样式*/
+/*工具栏*/
+QWidget[ToolBar='light']
+{
+    background-color:transparent;
+    border-radius:13px;
+    border:1px solid #d0d5df;
+}
+
+QWidget[ToolBar='dark']
+{
+    background-color:transparent;
+    border-radius:13px;
+    border:1px solid #4a4e57;
+}
+
+QWidget[ToolBar='light']:hover
+{
+    background-color:#5b5bfa;
+    border-radius:13px;
+    border:none
+}
+
+QWidget[ToolBar='dark']:hover
+{
+    background-color:#5b5bfa;
+    border-radius:13px;
+    border:none
+}
+/*工具栏*/
+
+/*下载信息*/
+QLabel[DownloadInfo='light'],[DownloadInfo='dark']
+{
+	font-family:"Microsoft YaHei";
+    font-size:12px;
+    border:none;
+    background-color:transparent;
+    color:#9b9b9b;
+    font-weight:normal;
+    padding-left:1px;
+    padding-right:1px;
+}
+/*下载信息*/
+
+/*文件名*/
+QLabel[FileName='light'],[FileName='dark']
+{
+	font-family:"Microsoft YaHei";
+    font-size:14px;
+	font-weight:normal;
+    border:none;
+    background-color:transparent;
+    padding-top:15px;
+    padding-left:2px;
+}
+
+QLabel[FileName='light']
+{
+    color:#727272;
+}
+
+QLabel[FileName='dark']
+{
+    color:#ffffff;
+}
+/*文件名*/
+
+/*下载进度条*/
+/*下载中*/
+QProgressBar[Progress='light'],[Progress='dark'],[Progress='pause_light'],[Progress='pause_dark'],[Progress='complete_light'],[Progress='complete_dark']
+{
+	max-height:6px;
+	border-radius:3px;
+	text-align:center;
+	border:none;
+}
+
+QProgressBar[Progress='light']
+{
+	background-color:#d0d5df;
+}
+
+QProgressBar[Progress='light']:chunk
+{
+	border-radius:3px;
+	background-color:#5b5bea;
+}
+
+QProgressBar[Progress='dark']
+{
+	background-color:#4a4e57;
+}
+
+QProgressBar[Progress='dark']:chunk
+{
+	border-radius:3px;
+	background-color:#5b5bea;
+}
+/*下载中*/
+/*暂停*/
+QProgressBar[Progress='pause_light']
+{
+	background-color:#d0d5df;
+}
+
+QProgressBar[Progress='pause_light']:chunk
+{
+	border-radius:3px;
+	background-color:#737373;
+}
+
+QProgressBar[Progress='pause_dark']
+{
+	background-color:#4a4e57;
+}
+
+QProgressBar[Progress='pause_dark']:chunk
+{
+	border-radius:3px;
+	background-color:#737373;
+}
+/*暂停*/
+/*下载完成*/
+QProgressBar[Progress='complete_light']
+{
+	background-color:#d0d5df;
+}
+
+QProgressBar[Progress='complete_light']:chunk
+{
+	border-radius:3px;
+	background-color:#2acb42;
+}
+
+QProgressBar[Progress='complete_dark']
+{
+	background-color:#4a4e57;
+}
+
+QProgressBar[Progress='complete_dark']:chunk
+{
+	border-radius:3px;
+	background-color:#2acb42;
+}
+/*下载完成*/
+/*下载进度条*/
+
+/*工具栏按钮*/
+QPushButton[ToolBarButton='start'],[ToolBarButton='pause'],[ToolBarButton='close'],[ToolBarButton='folder'],[ToolBarButton='link'],[ToolBarButton='info']
+{
+	border:none;
+	background-color:transparent;
+	background-position:center;
+	background-repeat:no-repeat;
+}
+
+QPushButton[ToolBarButton='start']
+{
+	background-image:url(image/start);
+}
+QPushButton[ToolBarButton='pause']
+{
+	background-image:url(image/pause);
+}
+QPushButton[ToolBarButton='close']
+{
+	background-image:url(image/close);
+}
+QPushButton[ToolBarButton='folder']
+{
+	background-image:url(image/folder);
+}
+QPushButton[ToolBarButton='link']
+{
+	background-image:url(image/link);
+}
+QPushButton[ToolBarButton='info']
+{
+	background-image:url(image/info);
+}
+/*工具栏按钮*/
+/*QListWidget的组件QListWidgetItem中Widget的样式*/
+/*QListWidget相关*/

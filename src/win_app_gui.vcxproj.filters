@@ -1,0 +1,359 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>qrc;rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="module_db">
+      <UniqueIdentifier>{c8a4c27c-aa19-4909-8572-37017295357e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_file">
+      <UniqueIdentifier>{c27a0246-a1e4-4beb-8e52-6bbb844aa0ef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_file\file">
+      <UniqueIdentifier>{8899cca9-2fbb-4b33-b068-6d36c4aa26f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_file\file_ctrl">
+      <UniqueIdentifier>{bf813fd6-e17a-430a-a85b-35d3911067a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_gui">
+      <UniqueIdentifier>{6e253b91-963a-4624-bdfb-0e893a0fbb93}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_gui\download">
+      <UniqueIdentifier>{751be83c-95b8-4305-bd4c-dcc1263951f1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_gui\left_bar">
+      <UniqueIdentifier>{c41d97d0-641e-40c6-b2e1-b7220343b1d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_gui\top_bar">
+      <UniqueIdentifier>{ee3f6d6e-8b8f-44c5-b41d-22cf4e212ba4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_gui\dialog">
+      <UniqueIdentifier>{f69c6d6c-0fcd-4a06-be4f-2857729db720}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_gui\general">
+      <UniqueIdentifier>{f967220f-d412-45c4-b2c0-351e3e2b2569}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_gui\info">
+      <UniqueIdentifier>{2bb2e48c-dbfb-491c-9f7d-9bb3bdbb9dfe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_gui\share">
+      <UniqueIdentifier>{64afbe27-3f55-4937-bd6a-6c83b7df273b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_handler">
+      <UniqueIdentifier>{2c0d8859-9ae3-433b-aead-06017ed0013d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_handler\base">
+      <UniqueIdentifier>{3eb5800e-91be-4df9-8bdf-751495f19020}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_handler\file">
+      <UniqueIdentifier>{4c0e23ee-946e-4aa4-b99f-5d1e10a8b837}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_net">
+      <UniqueIdentifier>{330e0544-d565-46b5-8162-bbacc4281b1d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_net\session">
+      <UniqueIdentifier>{25140ba2-2bb7-4839-baed-0631b1afd11d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_net\net">
+      <UniqueIdentifier>{6a7a384a-2b87-44c8-93cc-77206c507ea3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base">
+      <UniqueIdentifier>{35867a49-d895-4568-a953-6e7b929bc7c3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base\logger">
+      <UniqueIdentifier>{0caa9762-7b49-4162-8e67-e72355880200}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base\buffer">
+      <UniqueIdentifier>{543e6aef-6470-482f-b35c-ec1c32ed342f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base\timer">
+      <UniqueIdentifier>{3088ac31-73d6-47dd-a818-e58826d304e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base\protocol">
+      <UniqueIdentifier>{f4ff73c1-de4a-421b-9a35-09f724178b7a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base\thread_pool">
+      <UniqueIdentifier>{012ba929-2a2d-4128-8659-547e3b9fdf49}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="third">
+      <UniqueIdentifier>{056faeb6-e130-46b8-946c-a0e0ffb62e27}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="third\sha1">
+      <UniqueIdentifier>{34baaa60-3523-4a39-8d35-b15378a13028}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="third\md5">
+      <UniqueIdentifier>{af75184c-27eb-4476-9666-3b7b74dae17d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="third\kcp">
+      <UniqueIdentifier>{32429fc7-bbab-403f-8803-3b5316179cf9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="third\sqlite">
+      <UniqueIdentifier>{b35e23d3-d552-4f1a-bf24-7797caaeba18}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_peer">
+      <UniqueIdentifier>{3f37a8d4-7604-4967-a43d-52733a1bc141}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <QtRcc Include="win_app_gui.qrc">
+      <Filter>Resource Files</Filter>
+    </QtRcc>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="module_db\database.cpp">
+      <Filter>module_db</Filter>
+    </ClCompile>
+    <ClCompile Include="module_file\file\file.cpp">
+      <Filter>module_file\file</Filter>
+    </ClCompile>
+    <ClCompile Include="module_file\file\file_md5.cpp">
+      <Filter>module_file\file</Filter>
+    </ClCompile>
+    <ClCompile Include="module_file\file\file_sha1.cpp">
+      <Filter>module_file\file</Filter>
+    </ClCompile>
+    <ClCompile Include="module_file\file_ctrl\file_ctrl_complete.cpp">
+      <Filter>module_file\file_ctrl</Filter>
+    </ClCompile>
+    <ClCompile Include="module_file\file_ctrl\file_ctrl_incomplete.cpp">
+      <Filter>module_file\file_ctrl</Filter>
+    </ClCompile>
+    <ClCompile Include="module_file\file_ctrl\file_ctrl_interface.cpp">
+      <Filter>module_file\file_ctrl</Filter>
+    </ClCompile>
+    <ClCompile Include="module_file\file_manager.cpp">
+      <Filter>module_file</Filter>
+    </ClCompile>
+    <ClCompile Include="module_gui\ui_main_widget.cpp">
+      <Filter>module_gui</Filter>
+    </ClCompile>
+    <ClCompile Include="module_gui\ui_add_dialog.cpp">
+      <Filter>module_gui\dialog</Filter>
+    </ClCompile>
+    <ClCompile Include="module_gui\ui_download_card.cpp">
+      <Filter>module_gui\download</Filter>
+    </ClCompile>
+    <ClCompile Include="module_gui\ui_download_list.cpp">
+      <Filter>module_gui\download</Filter>
+    </ClCompile>
+    <ClCompile Include="module_gui\ui_frameless_dialog.cpp">
+      <Filter>module_gui\general</Filter>
+    </ClCompile>
+    <ClCompile Include="module_gui\ui_frameless_widget.cpp">
+      <Filter>module_gui\general</Filter>
+    </ClCompile>
+    <ClCompile Include="module_gui\ui_left_bar.cpp">
+      <Filter>module_gui\left_bar</Filter>
+    </ClCompile>
+    <ClCompile Include="module_gui\ui_share_tree.cpp">
+      <Filter>module_gui\share</Filter>
+    </ClCompile>
+    <ClCompile Include="module_gui\ui_top_bar.cpp">
+      <Filter>module_gui\top_bar</Filter>
+    </ClCompile>
+    <ClCompile Include="module_handler\handler_manager.cpp">
+      <Filter>module_handler</Filter>
+    </ClCompile>
+    <ClCompile Include="module_handler\handler_base.cpp">
+      <Filter>module_handler\base</Filter>
+    </ClCompile>
+    <ClCompile Include="module_handler\handler_file.cpp">
+      <Filter>module_handler\file</Filter>
+    </ClCompile>
+    <ClCompile Include="module_net\net_receiver.cpp">
+      <Filter>module_net</Filter>
+    </ClCompile>
+    <ClCompile Include="module_net\session_manager.cpp">
+      <Filter>module_net</Filter>
+    </ClCompile>
+    <ClCompile Include="module_net\session\session.cpp">
+      <Filter>module_net\session</Filter>
+    </ClCompile>
+    <ClCompile Include="module_net\net\net_receiver_win.cpp">
+      <Filter>module_net\net</Filter>
+    </ClCompile>
+    <ClCompile Include="base\encoder.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="base\logger\log_stream.cpp">
+      <Filter>base\logger</Filter>
+    </ClCompile>
+    <ClCompile Include="base\logger\logger.cpp">
+      <Filter>base\logger</Filter>
+    </ClCompile>
+    <ClCompile Include="base\logger\time_stamp.cpp">
+      <Filter>base\logger</Filter>
+    </ClCompile>
+    <ClCompile Include="base\buffer.cpp">
+      <Filter>base\buffer</Filter>
+    </ClCompile>
+    <ClCompile Include="base\timer.cpp">
+      <Filter>base\timer</Filter>
+    </ClCompile>
+    <ClCompile Include="base\thread_pool.cpp">
+      <Filter>base\thread_pool</Filter>
+    </ClCompile>
+    <ClCompile Include="third\sha1\sha1.c">
+      <Filter>third\sha1</Filter>
+    </ClCompile>
+    <ClCompile Include="third\sha1\ubc_check.c">
+      <Filter>third\sha1</Filter>
+    </ClCompile>
+    <ClCompile Include="third\md5\md5.cpp">
+      <Filter>third\md5</Filter>
+    </ClCompile>
+    <ClCompile Include="third\kcp\ikcp.c">
+      <Filter>third\kcp</Filter>
+    </ClCompile>
+    <ClCompile Include="module_peer\peer_manager.cpp">
+      <Filter>module_peer</Filter>
+    </ClCompile>
+    <ClCompile Include="app_ctrl.cpp" />
+    <ClCompile Include="win_app.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="module_db\database.h">
+      <Filter>module_db</Filter>
+    </ClInclude>
+    <ClInclude Include="module_file\file\file.h">
+      <Filter>module_file\file</Filter>
+    </ClInclude>
+    <ClInclude Include="module_file\file\file_md5.h">
+      <Filter>module_file\file</Filter>
+    </ClInclude>
+    <ClInclude Include="module_file\file\file_sha1.h">
+      <Filter>module_file\file</Filter>
+    </ClInclude>
+    <ClInclude Include="module_file\file_ctrl\file_ctrl_complete.h">
+      <Filter>module_file\file_ctrl</Filter>
+    </ClInclude>
+    <ClInclude Include="module_file\file_ctrl\file_ctrl_incomplete.h">
+      <Filter>module_file\file_ctrl</Filter>
+    </ClInclude>
+    <ClInclude Include="module_file\file_ctrl\file_ctrl_interface.h">
+      <Filter>module_file\file_ctrl</Filter>
+    </ClInclude>
+    <ClInclude Include="module_file\file_manager.h">
+      <Filter>module_file</Filter>
+    </ClInclude>
+    <ClInclude Include="module_handler\handler_interface.h">
+      <Filter>module_handler</Filter>
+    </ClInclude>
+    <ClInclude Include="module_handler\handler_manager.h">
+      <Filter>module_handler</Filter>
+    </ClInclude>
+    <ClInclude Include="module_handler\handler_base.h">
+      <Filter>module_handler\base</Filter>
+    </ClInclude>
+    <ClInclude Include="module_handler\handler_file.h">
+      <Filter>module_handler\file</Filter>
+    </ClInclude>
+    <ClInclude Include="module_net\net_receiver.h">
+      <Filter>module_net</Filter>
+    </ClInclude>
+    <ClInclude Include="module_net\session_manager.h">
+      <Filter>module_net</Filter>
+    </ClInclude>
+    <ClInclude Include="module_net\session\session.h">
+      <Filter>module_net\session</Filter>
+    </ClInclude>
+    <ClInclude Include="module_net\net\nat_type.hpp">
+      <Filter>module_net\net</Filter>
+    </ClInclude>
+    <ClInclude Include="module_net\net\net_receiver_win.h">
+      <Filter>module_net\net</Filter>
+    </ClInclude>
+    <ClInclude Include="base\config.hpp">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\encoder.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\object_pool.hpp">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\singleton.hpp">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\logger\logger.h">
+      <Filter>base\logger</Filter>
+    </ClInclude>
+    <ClInclude Include="base\logger\log_stream.h">
+      <Filter>base\logger</Filter>
+    </ClInclude>
+    <ClInclude Include="base\logger\time_stamp.h">
+      <Filter>base\logger</Filter>
+    </ClInclude>
+    <ClInclude Include="base\buffer.h">
+      <Filter>base\buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="base\buffer_pool.hpp">
+      <Filter>base\buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="base\timer.h">
+      <Filter>base\timer</Filter>
+    </ClInclude>
+    <ClInclude Include="base\protocol\protocol_base.h">
+      <Filter>base\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="base\protocol\protocol_file.h">
+      <Filter>base\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="base\thread_pool.h">
+      <Filter>base\thread_pool</Filter>
+    </ClInclude>
+    <ClInclude Include="third\sha1\sha1.h">
+      <Filter>third\sha1</Filter>
+    </ClInclude>
+    <ClInclude Include="third\sha1\ubc_check.h">
+      <Filter>third\sha1</Filter>
+    </ClInclude>
+    <ClInclude Include="third\md5\md5.h">
+      <Filter>third\md5</Filter>
+    </ClInclude>
+    <ClInclude Include="third\kcp\ikcp.h">
+      <Filter>third\kcp</Filter>
+    </ClInclude>
+    <ClInclude Include="third\sqlite\sqlite3.h">
+      <Filter>third\sqlite</Filter>
+    </ClInclude>
+    <ClInclude Include="third\sqlite\sqlite3ext.h">
+      <Filter>third\sqlite</Filter>
+    </ClInclude>
+    <ClInclude Include="module_peer\peer_manager.h">
+      <Filter>module_peer</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="app_ctrl.h" />
+    <QtMoc Include="module_gui\ui_main_widget.h">
+      <Filter>module_gui</Filter>
+    </QtMoc>
+    <QtMoc Include="module_gui\ui_add_dialog.h">
+      <Filter>module_gui\dialog</Filter>
+    </QtMoc>
+    <QtMoc Include="module_gui\ui_download_list.h">
+      <Filter>module_gui\download</Filter>
+    </QtMoc>
+    <QtMoc Include="module_gui\ui_download_card.h">
+      <Filter>module_gui\download</Filter>
+    </QtMoc>
+    <QtMoc Include="module_gui\ui_frameless_widget.h">
+      <Filter>module_gui\general</Filter>
+    </QtMoc>
+    <QtMoc Include="module_gui\ui_frameless_dialog.h">
+      <Filter>module_gui\general</Filter>
+    </QtMoc>
+    <QtMoc Include="module_gui\ui_left_bar.h">
+      <Filter>module_gui\left_bar</Filter>
+    </QtMoc>
+    <QtMoc Include="module_gui\ui_share_tree.h">
+      <Filter>module_gui\share</Filter>
+    </QtMoc>
+    <QtMoc Include="module_gui\ui_top_bar.h">
+      <Filter>module_gui\top_bar</Filter>
+    </QtMoc>
+  </ItemGroup>
+</Project>

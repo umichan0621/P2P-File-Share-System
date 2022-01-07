@@ -1,0 +1,215 @@
+/*TreeWidget样式*/
+QTreeWidget
+{
+    show-decoration-selected:1;/*整行的效果*/
+    font-family:"Microsoft YaHei";
+    font-size:16px;
+    background:transparent;
+    border:none;
+    padding:0px;
+    margin:0px;
+}
+
+QTreeWidget[TreeWidget='light']
+{
+    color:#727272;
+}
+
+QTreeWidget[TreeWidget='dark']
+{
+    color:#aaaaaa;
+}
+
+/*Header样式*/
+QHeaderView
+{
+	font-family:"Microsoft YaHei";
+    font-size:20px;
+    background:transparent;
+}
+QHeaderView[TreeWidget='light']
+{
+    border-bottom:2px solid #e5e5e5;
+}
+
+QHeaderView[TreeWidget='dark']
+{
+    border-bottom:2px solid #494949;
+}
+QHeaderView::section[TreeWidget='light']
+{
+    background:transparent;
+    color:#494949;
+}
+QHeaderView::section[TreeWidget='dark']
+{
+    background:transparent;
+    color:#e5e5e5;
+}
+/*Header样式*/
+/*Item样式*/
+QTreeWidget::item
+{
+	border:none;
+    padding-left:0px;
+    padding-right:15px;
+    margin:0px;
+}
+
+QTreeWidget::item[TreeWidget='light']:hover
+{
+    background:#ecf1ff;
+}
+QTreeWidget::item[TreeWidget='light']:selected
+{
+    color:#5b5bfa;
+}
+
+QTreeWidget::item[TreeWidget='dark']:hover
+{
+    background:#444444;
+}
+QTreeWidget::item[TreeWidget='dark']:selected
+{
+    color:#ffffff;
+}
+
+QTreeWidget::branch[TreeWidget='light']:hover
+{
+    background:#ecf1ff;
+}
+
+
+QTreeWidget::branch[TreeWidget='dark']:hover
+{
+    background:#444444;
+}
+
+
+
+
+/*Item样式*/
+/*TreeWidget样式*/
+
+/*文件名-按钮组件*/
+/*按钮样式*/
+QPushButton
+{
+	border:none;
+	width:23px;
+	height:20px;
+	background-color:transparent;
+	background-position:center;
+	background-repeat:no-repeat;
+}
+
+QPushButton:hover
+{
+	border:none;
+	background-color:transparent;
+	background-position:center;
+	background-repeat:no-repeat;
+}
+
+QPushButton[Button='link']
+{
+	background-image:url(image/link);
+}
+
+QPushButton[Button='link']:hover
+{
+	background-image:url(image/link_choose);
+}
+
+QPushButton[Button='folder']
+{
+	background-image:url(image/folder);
+}
+
+QPushButton[Button='folder']:hover
+{
+	background-image:url(image/folder_choose);
+}
+
+QPushButton[Button='close']
+{
+	background-image:url(image/close);
+}
+
+QPushButton[Button='close']:hover
+{
+	background-image:url(image/close_choose);
+}
+/*按钮样式*/
+
+/*CheckBox*/
+QCheckBox
+{
+    font-family:"Microsoft YaHei";
+    font-size:16px;
+    background:transparent;
+}
+QCheckBox[CheckBox='light']
+{
+    color:#727272;
+}
+QCheckBox[CheckBox='dark']
+{
+    color:#aaaaaa;
+}
+
+QCheckBox[CheckBox='light']:checked
+{
+    color:#5b5bfa;
+}
+
+QCheckBox[CheckBox='dark']:checked
+{
+    color:#ffffff;
+}
+
+QCheckBox::indicator
+{
+    border-radius:2px; 
+	width:12px;
+	height:12px;
+    margin-top:2px;
+    margin-right:2;
+}
+
+QCheckBox::indicator[CheckBox='light']
+{
+    border:1px solid #727272;
+}
+
+QCheckBox::indicator[CheckBox='dark']
+{
+    border:1px solid #aaaaaa;
+}
+
+QCheckBox::indicator:unchecked:hover
+{
+    border:1px solid #5b5bfa;
+    border-radius:2px; 
+    background:transparent;
+    margin-right:2;
+}
+
+QCheckBox::indicator:checked 
+{
+    border:1px solid #5b5bfa;
+    border-radius:2px; 
+    background:#5b5bfa;
+    margin-right:2;
+    color:red;
+
+	image: url(:/Images/checkBoxCheckedPressed);
+}
+/*CheckBox*/
+/*文件名-按钮组件*/
+
+
+ 
+
+
+

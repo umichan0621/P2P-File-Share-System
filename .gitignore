@@ -1,0 +1,14 @@
+/src/bin
+/src/obj
+/src/.vs
+/src/x64
+/src/Debug
+/src/Release
+/x64
+/.vs
+/Debug
+/Release
+*.lnk
+*.docx
+*.tmp
+*.db

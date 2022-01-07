@@ -1,0 +1,23 @@
+QPushButton
+{
+	border-style:outset;
+	background-color:transparent;
+	background-position:center; 
+	background-repeat:no-repeat;
+	background-image:url(IMAGE_PATH);
+}
+
+#TopBar_dark:hover
+{
+	background-color:#050505;
+}
+
+#TopBar_light:hover
+{
+	background-color:#eeeeee;
+}
+
+#TopBarClose:hover
+{
+	background-color:#fd0007;
+}

@@ -1,0 +1,12 @@
+QPushButton
+{
+	background-color:transparent;
+	border-image:url(IMAGE_PATH);
+}
+
+QPushButton:hover
+{
+
+	border-radius:15px;
+	background-color:#515151;
+}

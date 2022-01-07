@@ -1,0 +1,162 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="linux_app.cpp" />
+    <ClCompile Include="base\timer.cpp">
+      <Filter>base\timer</Filter>
+    </ClCompile>
+    <ClCompile Include="base\thread_pool.cpp">
+      <Filter>base\thread_pool</Filter>
+    </ClCompile>
+    <ClCompile Include="third\kcp\ikcp.c">
+      <Filter>third\kcp</Filter>
+    </ClCompile>
+    <ClCompile Include="tracker_ctrl.cpp" />
+    <ClCompile Include="base\logger\log_stream.cpp">
+      <Filter>base\logger</Filter>
+    </ClCompile>
+    <ClCompile Include="base\logger\logger.cpp">
+      <Filter>base\logger</Filter>
+    </ClCompile>
+    <ClCompile Include="base\logger\time_stamp.cpp">
+      <Filter>base\logger</Filter>
+    </ClCompile>
+    <ClCompile Include="base\buffer.cpp">
+      <Filter>base</Filter>
+    </ClCompile>
+    <ClCompile Include="module_net\net_receiver.cpp">
+      <Filter>module_net</Filter>
+    </ClCompile>
+    <ClCompile Include="module_net\session_manager.cpp">
+      <Filter>module_net</Filter>
+    </ClCompile>
+    <ClCompile Include="module_net\net\net_receiver_linux.cpp">
+      <Filter>module_net\net</Filter>
+    </ClCompile>
+    <ClCompile Include="module_net\session\session.cpp">
+      <Filter>module_net\session</Filter>
+    </ClCompile>
+    <ClCompile Include="module_handler\handler_base.cpp">
+      <Filter>module_handler</Filter>
+    </ClCompile>
+    <ClCompile Include="module_handler\handler_manager.cpp">
+      <Filter>module_handler</Filter>
+    </ClCompile>
+    <ClCompile Include="module_peer\peer_manager.cpp">
+      <Filter>module_peer</Filter>
+    </ClCompile>
+    <ClCompile Include="module_peer\peer\peer_info.cpp">
+      <Filter>module_peer</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="base\singleton.hpp">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\object_pool.hpp">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\buffer_pool.hpp">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\timer.h">
+      <Filter>base\timer</Filter>
+    </ClInclude>
+    <ClInclude Include="base\thread_pool.h">
+      <Filter>base\thread_pool</Filter>
+    </ClInclude>
+    <ClInclude Include="base\config.hpp">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="base\protocol\protocol_base.h">
+      <Filter>base\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="base\protocol\protocol_file.h">
+      <Filter>base\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="third\kcp\ikcp.h">
+      <Filter>third\kcp</Filter>
+    </ClInclude>
+    <ClInclude Include="tracker_ctrl.h" />
+    <ClInclude Include="base\logger\log_stream.h">
+      <Filter>base\logger</Filter>
+    </ClInclude>
+    <ClInclude Include="base\logger\logger.h">
+      <Filter>base\logger</Filter>
+    </ClInclude>
+    <ClInclude Include="base\logger\time_stamp.h">
+      <Filter>base\logger</Filter>
+    </ClInclude>
+    <ClInclude Include="base\buffer.h">
+      <Filter>base</Filter>
+    </ClInclude>
+    <ClInclude Include="module_net\net_receiver.h">
+      <Filter>module_net</Filter>
+    </ClInclude>
+    <ClInclude Include="module_net\session_manager.h">
+      <Filter>module_net</Filter>
+    </ClInclude>
+    <ClInclude Include="module_net\net\nat_type.hpp">
+      <Filter>module_net\net</Filter>
+    </ClInclude>
+    <ClInclude Include="module_net\net\net_receiver_linux.h">
+      <Filter>module_net\net</Filter>
+    </ClInclude>
+    <ClInclude Include="module_net\session\session.h">
+      <Filter>module_net\session</Filter>
+    </ClInclude>
+    <ClInclude Include="module_handler\handler_base.h">
+      <Filter>module_handler</Filter>
+    </ClInclude>
+    <ClInclude Include="module_handler\handler_interface.h">
+      <Filter>module_handler</Filter>
+    </ClInclude>
+    <ClInclude Include="module_handler\handler_manager.h">
+      <Filter>module_handler</Filter>
+    </ClInclude>
+    <ClInclude Include="module_peer\peer_manager.h">
+      <Filter>module_peer</Filter>
+    </ClInclude>
+    <ClInclude Include="module_peer\peer\peer_info.h">
+      <Filter>module_peer</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="base">
+      <UniqueIdentifier>{c27059f2-7df1-42fc-bc40-27010a90a2f1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base\logger">
+      <UniqueIdentifier>{95a70b4e-5901-4893-a88f-11ac9fa4f4ba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base\protocol">
+      <UniqueIdentifier>{030ca986-b029-4463-af32-f67f2f26d96b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base\timer">
+      <UniqueIdentifier>{e9a9d576-4b11-4192-ba6a-f31ae8f85a5b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base\thread_pool">
+      <UniqueIdentifier>{7ab796ae-e9f3-4e89-9f57-c67d7f4cf2fb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="third">
+      <UniqueIdentifier>{0e28df4d-6435-40aa-989e-30ccb4079434}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="third\kcp">
+      <UniqueIdentifier>{dded9ef2-b4d1-44c2-b040-78021f73924d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_net">
+      <UniqueIdentifier>{56a63d39-ce85-4fa3-ad15-8de5786179df}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_net\net">
+      <UniqueIdentifier>{336935c0-68e6-4085-bf53-69518fe3b6c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_net\session">
+      <UniqueIdentifier>{1ec7e499-6ebb-4968-8963-046c2f7fde38}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_handler">
+      <UniqueIdentifier>{8f3e5708-3916-421d-9099-a15d650e0a70}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_peer">
+      <UniqueIdentifier>{ea120341-ae44-4d11-b397-3d807e1426fc}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
