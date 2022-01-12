@@ -70,6 +70,32 @@ namespace base
 		return true;
 	}
 
+	bool Timer::add_timer_lockless(uint32_t Interval, const Task& NewTask)
+	{
+		if (Interval < m_RefreshInterval || Interval % m_RefreshInterval != 0
+			|| Interval >= m_RefreshInterval * m_MsecTick * m_SecTick * m_MinTick)
+		{
+			return false;
+		}
+		TimerEvent NewEvent = { 0 };
+		NewEvent.Interval = Interval;
+		//初始化回调函数
+		NewEvent.CallBack = NewTask;
+		//初始化事件的时间
+		NewEvent.EventTimeTick.Ms = m_TimeTick.Ms;
+		NewEvent.EventTimeTick.Sec = m_TimeTick.Sec;
+		NewEvent.EventTimeTick.Min = m_TimeTick.Min;
+
+		if (m_TimerCount == MAX_TIMER_NUM)
+		{
+			return false;
+		}
+		//插入定时器
+		_insert_timer(Interval, NewEvent);
+		m_TimerCount++;
+		return true;
+	}
+
 	void Timer::refresh_timer()
 	{
 		TimeTick CurTime = { 0 };
@@ -107,22 +133,21 @@ namespace base
 		m_bIsThreadCreate = true;
 		std::thread th([&]
 			{
+				std::unique_lock<std::mutex> Lock(m_TimerMutex);
+				if (true == m_bIsThreadCreate)
+				{
+					return;
+				}
+				m_bIsThreadCreate = true;
+				Lock.unlock();
 
 				high_resolution_clock::time_point BeignTime = high_resolution_clock::now();
-				milliseconds CostTime = duration_cast<milliseconds>(high_resolution_clock::now() - BeignTime);
-
-				int32_t SleepTime = 0;
-				while (1)
+				//使用sleep_until可以自动补正误差时间
+				for (;;)
 				{
-					//补正刷新定时器的时间
-					SleepTime = m_RefreshInterval - (uint32_t)CostTime.count();
-					if (SleepTime > 0)
-					{
-						std::this_thread::sleep_for(milliseconds(SleepTime));
-					}
-					BeignTime = high_resolution_clock::now();
+					BeignTime += milliseconds(m_RefreshInterval);
 					refresh_timer();
-					CostTime = duration_cast<milliseconds>(high_resolution_clock::now() - BeignTime);
+					std::this_thread::sleep_until(BeignTime);
 				}
 			});
 		th.detach();
@@ -139,19 +164,12 @@ namespace base
 		Lock.unlock();
 
 		high_resolution_clock::time_point BeignTime = high_resolution_clock::now();
-		milliseconds CostTime = duration_cast<milliseconds>(high_resolution_clock::now() - BeignTime);
-		int32_t SleepTime = 0;
-		while (1)
+		//使用sleep_until可以自动补正误差时间
+		for (;;)
 		{
-			//补正刷新定时器的时间
-			SleepTime = m_RefreshInterval - (uint32_t)CostTime.count();
-			if (SleepTime > 0)
-			{
-				std::this_thread::sleep_for(milliseconds(SleepTime));
-			}
-			BeignTime = high_resolution_clock::now();
+			BeignTime += milliseconds(m_RefreshInterval);
 			refresh_timer();
-			CostTime = duration_cast<milliseconds>(high_resolution_clock::now() - BeignTime);
+			std::this_thread::sleep_until(BeignTime);
 		}
 	}
 

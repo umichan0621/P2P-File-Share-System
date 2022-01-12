@@ -45,6 +45,8 @@ namespace base
 		//设置时间为TimeOut的事件时,根据TimeOut算出发生此事件时刻的指针位置{TriggerMin,TriggerS,TriggerMS};
 		//增加计时器，Interval必须是m_RefreshInterval的倍数
 		bool add_timer(uint32_t Interval, const Task& NewTask);
+
+		bool add_timer_lockless(uint32_t Interval, const Task& NewTask);
 		//手动刷新，可与其他需要定时刷新的组件一起使用，刷新间隔应该和初始化时一致
 		void refresh_timer();
 		//创建自动刷新的线程
