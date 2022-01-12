@@ -92,7 +92,7 @@ namespace file
 		return m_pFile->read(FragmentStart, Len);
 	}
 
-	bool FileCtrlCmpl::md5_segment(MD5& MD5Obj, uint64_t Start)
+	bool FileCtrlCmpl::md5_segment(base::MD5& MD5Obj, uint64_t Start)
 	{
 		return m_pFile->md5(MD5Obj, Start, FULL_SEGMENT_SIZE);
 	}
@@ -107,7 +107,7 @@ namespace file
 		return m_pFile->size();
 	}
 
-	void FileCtrlCmpl::check_segment_md5(uint64_t SegmentStart, MD5& MD5Obj){}
+	void FileCtrlCmpl::check_segment_md5(uint64_t SegmentStart, base::MD5& MD5Obj){}
 
 	void FileCtrlCmpl::complete_fragment(const char* pBuf, uint64_t FragmentStart, uint16_t Len) {}
 

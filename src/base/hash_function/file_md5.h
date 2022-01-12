@@ -9,7 +9,7 @@
 #include <string>
 #include <third/md5/md5.h>
 
-namespace file
+namespace base
 {
 	//MD5长度为128位，可以用两个64位int表示
 	struct MD5

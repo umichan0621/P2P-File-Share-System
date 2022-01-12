@@ -389,7 +389,7 @@ namespace file
 		m_PreClock = _clock();
 	}
 
-	void FileCtrlIncmpl::check_segment_md5(uint64_t FragmentStart, MD5& MD5Obj)
+	void FileCtrlIncmpl::check_segment_md5(uint64_t FragmentStart, base::MD5& MD5Obj)
 	{
 		//std::string CurMD5 = md5(FragmentStart, FULL_SEGMENT_SIZE);
 		//uint64_t SegmentSeq = FragmentStart >> 21;
@@ -409,7 +409,7 @@ namespace file
 		//}
 	}
 
-	bool FileCtrlIncmpl::md5_segment(MD5& MD5Obj, uint64_t SegmentStart)
+	bool FileCtrlIncmpl::md5_segment(base::MD5& MD5Obj, uint64_t SegmentStart)
 	{
 		uint64_t SegmentSeq = SegmentStart >> 21;
 		bool bRes = m_pCtrlFile->read_binary(m_FragmentNum + SegmentSeq);

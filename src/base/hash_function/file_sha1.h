@@ -7,15 +7,26 @@
 #pragma once
 #include <stdint.h>
 #include <string>
+#include <cstring>
 #include <third/sha1/sha1.h>
-#include <base/logger/logger.h>
 
-namespace file
+namespace base
 {
-	//MD5长度为128位，可以用两个64位int表示
 	struct SHA1
 	{
 		uint8_t Hash[20];
+
+		bool operator==(const SHA1& Other)
+		{
+			for (int32_t i = 0; i < 20; ++i)
+			{
+				if (Hash[i] != Other.Hash[i])
+				{
+					return false;
+				}
+			}
+			return true;
+		}
 	};
 
 	void sha1_value(const SHA1& SHA1Struct, std::string& strSHA1);
@@ -36,9 +47,6 @@ namespace file
 	{
 		bool operator()(const SHA1& SHA1Struct1, const SHA1& SHA1Struct2) const
 		{
-			std::string x, y;
-			sha1_value(SHA1Struct1, x);
-			sha1_value(SHA1Struct2, y);
 			for (int32_t i = 0; i < 20; ++i)
 			{
 				if (SHA1Struct1.Hash[i] != SHA1Struct2.Hash[i])

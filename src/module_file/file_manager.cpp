@@ -21,7 +21,7 @@ namespace file
 		{
 			return false;
 		}
-		SHA1 SHA1Struct;
+		base::SHA1 SHA1Struct;
 		pCmplFile->full_sha1(SHA1Struct);
 		if (0 != m_SeqMap.count(SHA1Struct))
 		{
@@ -40,7 +40,7 @@ namespace file
 		{
 			//只删除自己维护的
 			FileCtrl pFileCtrl = m_FileMap[FileSeq];
-			SHA1 SHA1Struct;
+			base::SHA1 SHA1Struct;
 			pFileCtrl->full_sha1(SHA1Struct);
 
 			if (0 != m_SeqMap.count(SHA1Struct))
@@ -63,7 +63,7 @@ namespace file
 		{
 			return false;
 		}
-		SHA1 SHA1Struct;
+		base::SHA1 SHA1Struct;
 		pIncmplFile->full_sha1(SHA1Struct);
 		if (0 != m_SeqMap.count(SHA1Struct))
 		{
@@ -82,7 +82,7 @@ namespace file
 	bool FileManager::kill_download_file(int32_t FileSeq)
 	{
 		std::lock_guard<std::mutex> Lock(m_FileMgrMutex);
-		SHA1 SHA1Struct;
+		base::SHA1 SHA1Struct;
 		m_FileMap[FileSeq]->full_sha1(SHA1Struct);
 		m_SeqMap.erase(SHA1Struct);
 		m_FileMap.erase(FileSeq);
@@ -154,7 +154,7 @@ namespace file
 		return true;
 	}
 
-	bool FileManager::file_ctrl(const SHA1& SHA1Struct, FileCtrl& FileCtrl)
+	bool FileManager::file_ctrl(const base::SHA1& SHA1Struct, FileCtrl& FileCtrl)
 	{
 		std::lock_guard<std::mutex> Lock(m_FileMgrMutex);
 		if (0 == m_SeqMap.count(SHA1Struct))

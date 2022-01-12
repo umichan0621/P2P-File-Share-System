@@ -16,22 +16,22 @@ namespace file
 		return m_pFile->time(WriteTime);
 	}
 
-	void FileCtrlInterface::set_sha1(const SHA1& SHA1Struct)
+	void FileCtrlInterface::set_sha1(const base::SHA1& SHA1Struct)
 	{
 		m_ActualSHA1= SHA1Struct;
 	}
 
-	void FileCtrlInterface::full_sha1(SHA1& SHA1Struct)
+	void FileCtrlInterface::full_sha1(base::SHA1& SHA1Struct)
 	{
 		SHA1Struct = m_ActualSHA1;
 	}
 	
-	bool FileCtrlInterface::sha1(SHA1& SHA1Struct)
+	bool FileCtrlInterface::sha1(base::SHA1& SHA1Struct)
 	{
 		return m_pFile->sha1(SHA1Struct);
 	}
 	
-	void FileCtrlInterface::check_segment_md5(uint64_t SegmentStart, MD5& MD5Obj){}
+	void FileCtrlInterface::check_segment_md5(uint64_t SegmentStart, base::MD5& MD5Obj){}
 
 	void FileCtrlInterface::complete_fragment(const char* pBuf, uint64_t FragmentStart, uint16_t Len) {}
 

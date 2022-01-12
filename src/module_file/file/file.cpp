@@ -182,12 +182,12 @@ namespace file
 		}
 	}
 
-	bool File::sha1(SHA1& SHA1Struct)
+	bool File::sha1(base::SHA1& SHA1Struct)
 	{
 		return sha1(SHA1Struct, 0, m_FileSize);
 	}
 
-	bool File::sha1(SHA1& SHA1Struct, uint64_t Start, uint64_t Len)
+	bool File::sha1(base::SHA1& SHA1Struct, uint64_t Start, uint64_t Len)
 	{
 		if (Start >= m_FileSize)
 		{
@@ -216,12 +216,12 @@ namespace file
 	}
 
 
-	bool File::md5(MD5& MD5Obj)
+	bool File::md5(base::MD5& MD5Obj)
 	{
 		return md5(MD5Obj,0, m_FileSize);
 	}
 
-	bool File::md5(MD5& MD5Obj,uint64_t Start, uint64_t Len)
+	bool File::md5(base::MD5& MD5Obj,uint64_t Start, uint64_t Len)
 	{
 		if (Start >= m_FileSize)
 		{

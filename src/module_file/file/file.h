@@ -10,8 +10,8 @@
 #include <stdint.h>
 #include <string>
 #include <mutex>
-#include "file_md5.h"
-#include "file_sha1.h"
+#include <base/hash_function/file_sha1.h>
+#include <base/hash_function/file_md5.h>
 
 namespace file
 {
@@ -45,10 +45,10 @@ namespace file
 		//读取文件大小
 		uint64_t size();
 		//读取文件的md5值
-		bool sha1(SHA1& SHA1Struct);
-		bool sha1(SHA1& SHA1Struct, uint64_t Start, uint64_t Len);
-		bool md5(MD5& MD5Obj);
-		bool md5(MD5& MD5Obj,uint64_t Start, uint64_t Len);
+		bool sha1(base::SHA1& SHA1Struct);
+		bool sha1(base::SHA1& SHA1Struct, uint64_t Start, uint64_t Len);
+		bool md5(base::MD5& MD5Obj);
+		bool md5(base::MD5& MD5Obj,uint64_t Start, uint64_t Len);
 		bool time(uint64_t& WriteTime);
 		bool time(uint64_t& CreateTime, uint64_t& AccessTime, uint64_t& WriteTime);
 	private:

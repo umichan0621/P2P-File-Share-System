@@ -34,9 +34,9 @@ namespace file
 		void add_priority_task(uint64_t SegmentSeq);
 	public://MD5验证相关
 		//校验2M的Segment完整性
-		void check_segment_md5(uint64_t SegmentStart, MD5& MD5Obj) override;
+		void check_segment_md5(uint64_t SegmentStart, base::MD5& MD5Obj) override;
 		//计算文件部分内容的MD5
-		bool md5_segment(MD5& MD5Obj, uint64_t SegmentStart) override;
+		bool md5_segment(base::MD5& MD5Obj, uint64_t SegmentStart) override;
 	public://接受消息之后下载任务完成
 		void complete_fragment	(const char* pBuf, uint64_t FragmentStart, uint16_t Len) override;
 		void complete_segment	(uint64_t SegmentStart) override;

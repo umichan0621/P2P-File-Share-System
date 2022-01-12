@@ -26,7 +26,8 @@ namespace file
 
 	class FileManager
 	{
-		typedef std::unordered_map<SHA1, int32_t, SHA1HashFunc, SHA1EqualFunc>	SeqMap;			//SHA1->文件序号
+		typedef std::unordered_map<base::SHA1, int32_t, 
+			base::SHA1HashFunc, base::SHA1EqualFunc>							SeqMap;			//SHA1->文件序号
 		typedef std::unordered_map<int32_t, FileCtrl>							FileMap;		//文件序号->文件控制器
 		typedef std::deque<FileCtrl>											DownloadList;
 		typedef std::list<FileCtrl>												WaitList;
@@ -45,7 +46,7 @@ namespace file
 		void refresh_download_list();
 		//获取一个下载任务
 		bool download_task(FileCtrl& FileCtrl);
-		bool file_ctrl(const SHA1& SHA1Struct, FileCtrl& FileCtrl);
+		bool file_ctrl(const base::SHA1& SHA1Struct, FileCtrl& FileCtrl);
 		void download_status(std::vector<DownloadStatus>& VecStatus);
 		void set_max_download(uint16_t MaxDownLoadNum);
 	private://文件控制器的相关容器

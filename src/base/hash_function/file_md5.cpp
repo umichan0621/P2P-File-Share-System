@@ -3,7 +3,7 @@
 #pragma warning(disable:6297)
 #pragma warning(disable:4244)
 
-namespace file
+namespace base
 {
 	static const char* HEX_TABLE = "0123456789abcdef";
 
