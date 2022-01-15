@@ -15,8 +15,8 @@ namespace peer
 		}
 		else
 		{
-			PeerStatus CurStatus = N.node_status();
-			for (int32_t i = 0; i < KBUCKET_SIZE; ++i)
+			uint8_t CurStatus = N.node_status();
+			for (int32_t i = 0; i < m_NodeList.size(); ++i)
 			{
 				//当前节点比新节点状态差
 				if (m_NodeList.front().node_status() > CurStatus)

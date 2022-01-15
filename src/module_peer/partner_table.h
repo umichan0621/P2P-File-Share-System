@@ -27,8 +27,12 @@ namespace peer
 	 */
 	class PartnerTable
 	{
+	public:
 		//设置同一个CID允许同时连接的最大Session数量
 		void set_partner_max_num(uint16_t PartnerMaxNum);
+
+		//添加一个感兴趣的CID
+		void add_cid(const base::SHA1& CID);
 
 		//为特定CID添加一个Partner
 		void add_partner(const base::SHA1& CID, uint16_t SessionId);
@@ -36,14 +40,23 @@ namespace peer
 		//删除一个Partner，并删除其所有CID中的记录
 		void delete_partner(uint16_t SessionId);
 
+		//查询一个Partner是否已经记录，存在返回true
+		bool search_partner(const base::SHA1& CID, uint16_t SessionId);
+
 		//删除一个CID，并删除与其相关的Partner
 		void delete_cid(const base::SHA1& CID);
+
+		//查询一个CID，如果存在返回true
+		bool search_cid(const base::SHA1& CID);
+
+		//查询一个CID，查询成功返回true，并加入PartnerList
+		bool search_cid(const base::SHA1& CID, std::list<uint16_t>& PartnerList);
 
 		//获取一个CID，获取失败返回false
 		//用于向其他节点扩散自己有CID这件事
 		bool get_cid(base::SHA1& CID);
 	private:
-		uint16_t						m_PartnerMaxNum;
+		uint16_t						m_PartnerMaxNum = 0;
 		std::mutex						m_PartnerMutex;
 		PartnerMap						m_PartnerMap;
 		PartnerContent					m_PartnerContent;

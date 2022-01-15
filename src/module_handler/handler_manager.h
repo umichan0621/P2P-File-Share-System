@@ -26,8 +26,6 @@ namespace handler
 		//返回false断开连接
 		int8_t handle_on_recv(uint16_t& SessionId, char* pMessage, uint16_t& Len);
 	private:
-		bool heartbeat_examine(uint16_t SessionId);
-	private:
 		std::vector<HandlerInterface*> m_RecvEventMap;
 		std::vector<HandlerInterface*> m_GatewayEventMap;
 	};

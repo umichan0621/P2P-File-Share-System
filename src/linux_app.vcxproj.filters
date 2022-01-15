@@ -48,6 +48,30 @@
     <ClCompile Include="module_peer\peer\peer_info.cpp">
       <Filter>module_peer</Filter>
     </ClCompile>
+    <ClCompile Include="module_peer\partner_table.cpp">
+      <Filter>module_peer</Filter>
+    </ClCompile>
+    <ClCompile Include="module_peer\routing_table.cpp">
+      <Filter>module_peer</Filter>
+    </ClCompile>
+    <ClCompile Include="module_peer\routing\k_bucket.cpp">
+      <Filter>module_peer\routing</Filter>
+    </ClCompile>
+    <ClCompile Include="module_peer\routing\node.cpp">
+      <Filter>module_peer\routing</Filter>
+    </ClCompile>
+    <ClCompile Include="base\hash_function\file_sha1.cpp">
+      <Filter>base\hash_function</Filter>
+    </ClCompile>
+    <ClCompile Include="third\sha1\sha1.c">
+      <Filter>third\sha1</Filter>
+    </ClCompile>
+    <ClCompile Include="third\sha1\ubc_check.c">
+      <Filter>third\sha1</Filter>
+    </ClCompile>
+    <ClCompile Include="module_handler\handler_routing.cpp">
+      <Filter>module_handler</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="base\singleton.hpp">
@@ -120,6 +144,33 @@
     <ClInclude Include="module_peer\peer\peer_info.h">
       <Filter>module_peer</Filter>
     </ClInclude>
+    <ClInclude Include="base\protocol\protocol_routing.h">
+      <Filter>base\protocol</Filter>
+    </ClInclude>
+    <ClInclude Include="module_peer\partner_table.h">
+      <Filter>module_peer</Filter>
+    </ClInclude>
+    <ClInclude Include="module_peer\routing_table.h">
+      <Filter>module_peer</Filter>
+    </ClInclude>
+    <ClInclude Include="module_peer\routing\k_bucket.h">
+      <Filter>module_peer\routing</Filter>
+    </ClInclude>
+    <ClInclude Include="module_peer\routing\node.h">
+      <Filter>module_peer\routing</Filter>
+    </ClInclude>
+    <ClInclude Include="base\hash_function\file_sha1.h">
+      <Filter>base\hash_function</Filter>
+    </ClInclude>
+    <ClInclude Include="third\sha1\ubc_check.h">
+      <Filter>third\sha1</Filter>
+    </ClInclude>
+    <ClInclude Include="third\sha1\sha1.h">
+      <Filter>third\sha1</Filter>
+    </ClInclude>
+    <ClInclude Include="module_handler\handler_routing.h">
+      <Filter>module_handler</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="base">
@@ -157,6 +208,15 @@
     </Filter>
     <Filter Include="module_peer">
       <UniqueIdentifier>{ea120341-ae44-4d11-b397-3d807e1426fc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="module_peer\routing">
+      <UniqueIdentifier>{0ef24def-7da6-4c33-887c-231190a4eb53}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="base\hash_function">
+      <UniqueIdentifier>{2944280d-fb24-4b5b-bb23-ff88ea5030ed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="third\sha1">
+      <UniqueIdentifier>{bfe68cf5-f88f-4294-8c2d-50a7582b22f4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

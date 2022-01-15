@@ -1,9 +1,12 @@
 ﻿#include "session.h"
 #include <chrono>
+#include <algorithm>
 #include <module_net/net_receiver.h>
 #include <base/logger/logger.h>
 #include <base/timer.h>
 #include <base/protocol/protocol_base.h>
+#include <module_peer/peer_manager.h>
+
 using namespace std::chrono;
 #pragma warning(disable:4244)
 
@@ -56,6 +59,11 @@ namespace net
 		m_SessionStatus = Status;
 	}
 
+	sockaddr* Session::get_sockaddr()
+	{
+		return m_pSockaddr;
+	}
+
 	bool Session::init(sockaddr* pSockaddr, SOCKET ListenFd, SOCKET ListenFdNAT)
 	{
 		if (nullptr == pSockaddr)
@@ -79,7 +87,7 @@ namespace net
 		::ikcp_wndsize(m_Kcp, 1024, 2048);
 		//m_Interval = 100;
 		m_Kcp->output = &Session::output;
-		g_pTimer->add_timer(50, std::bind(&Session::update, this));
+		g_pTimer->add_timer(100, std::bind(&Session::update, this));
 		m_Kcp->interval = 10;
 		m_Kcp->rx_minrto = 50;
 		m_Kcp->stream = 1;
@@ -129,13 +137,12 @@ namespace net
 		//解析数据，去除KCP部分
 		::ikcp_input(m_Kcp, pMessage, Len);
 		::ikcp_update(m_Kcp, _clock());
-		//尝试循环读取KCP缓存，直到返回-1
 		m_CondVrb.wait(Lock, [=]() 
 			{
-
 			//当前没有其他线程在读取时，允许写入
 			return m_RecvBuffer.reader_count() == 0;
 			});
+		//尝试循环读取KCP缓存，直到返回-1
 		for (;;)
 		{
 			//按序读取可用数据
@@ -144,25 +151,8 @@ namespace net
 			{
 				return;
 			}
-			//LOG_ERROR << Res;
-			//将缓存写入Session的Recv缓存
-			//当前可以直接写入
-			//LOG_ERROR << "WRITEABLE = " << m_RecvBuffer.writable_size();
-			//if (m_RecvBuffer.writable_size() >= Res)
-			//{
-			//	m_RecvBuffer.append(pMessage, Res);
-			//}
-			//如果写入缓存不够应该判断当前是否可以扩容
-			//else
-			//{
-			//m_CondVrb.wait(Lock, [=](){
-			//		//当前没有其他线程在读取时，允许写入
-			//		return m_RecvBuffer.reader_count() == 0;
-			//	});
-
 			//空间不够时append会扩容
 			m_RecvBuffer.append(pMessage, Res);
-			//}
 		}
 	}
 
@@ -183,7 +173,7 @@ namespace net
 		{
 			return nullptr;
 		}
-		LOG_ERROR << "Len = " << Len << " Readable = " << BufLen;
+		//LOG_ERROR << "Len = " << Len << " Readable = " << BufLen;
 
 		//告知Buffer现在有一个读者正在读取Buffer，此时禁止扩容
 		m_RecvBuffer.retrieve(Len + 2);
@@ -200,6 +190,7 @@ namespace net
 	void Session::send_reliable(const char* pMessage, uint16_t Len)
 	{
 		std::lock_guard<std::mutex> Lock(m_KcpMutex);
+		::ikcp_send(m_Kcp, (char*)&Len, 2);
 		::ikcp_send(m_Kcp, pMessage, Len);
 		::ikcp_update(m_Kcp, _clock());
 	}
@@ -207,6 +198,10 @@ namespace net
 	void Session::send_reliable(std::vector<const char*>& VecMessage, std::vector <uint16_t>& VecLen)
 	{
 		std::lock_guard<std::mutex> Lock(m_KcpMutex);
+		uint16_t Len = 0;
+		for (auto& L : VecLen)
+			Len += L;
+		::ikcp_send(m_Kcp, (char*)&Len, 2);
 		for (int32_t Cur = 0; Cur < VecMessage.size(); ++Cur)
 		{
 			::ikcp_send(m_Kcp, VecMessage[Cur], VecLen[Cur]);
@@ -277,4 +272,8 @@ namespace net
 		return m_pPeerInfo;
 	}
 
+	int32_t Session::peer_id()
+	{
+		return g_pPeerManager->peer_id(m_pSockaddr);
+	}
 }

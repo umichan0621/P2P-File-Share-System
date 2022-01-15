@@ -26,7 +26,7 @@ namespace peer
 		//返回当前节点的PeerId
 		int32_t peer_id() const;
 
-		PeerStatus node_status() const;
+		uint8_t node_status() const;
 
 		//计算两个Key之间的距离
 		//距离定义为两个节点Key值异或之后前面0的个数

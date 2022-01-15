@@ -14,7 +14,7 @@ namespace peer
 		return m_PeerId;
 	}
 
-	PeerStatus Node::node_status() const
+	uint8_t Node::node_status() const
 	{
 		return g_pPeerManager->peer_status(m_PeerId);
 	}
@@ -39,7 +39,7 @@ namespace peer
 			XOR <<= 1;
 			j++;
 		}
-		return 160 - j - (i << 3);
+		return 159 - j - (i << 3);
 	}
 
 	uint8_t Node::distance(const Node& N1, const Node& N2)

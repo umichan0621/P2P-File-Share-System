@@ -34,6 +34,19 @@ namespace base
 		}
 	}
 
+	void sha1_value(const uint8_t* Key, std::string& strSHA1)
+	{
+		strSHA1 = "";
+		for (int32_t i = 0; i < 20; ++i)
+		{
+			uint8_t Cur = Key[i];
+
+			strSHA1 += HEX_TABLE[Cur >> 4];
+			strSHA1 += HEX_TABLE[Cur & 0xf];
+		}
+	}
+
+
 	bool sha1_parse(const std::string& strSHA1, SHA1& SHA1Struct)
 	{
 		if (strSHA1.size() != 40)

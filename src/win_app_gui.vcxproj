@@ -95,12 +95,14 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>$(Qt_INCLUDEPATH_);$(SolutionDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>$(Qt_INCLUDEPATH_);$(SolutionDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>26498;26812;26451;26495</DisableSpecificWarnings>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'" Label="Configuration">
@@ -149,6 +151,8 @@
     <ClCompile Include="app_ctrl.cpp" />
     <ClCompile Include="base\buffer.cpp" />
     <ClCompile Include="base\encoder.cpp" />
+    <ClCompile Include="base\hash_function\file_md5.cpp" />
+    <ClCompile Include="base\hash_function\file_sha1.cpp" />
     <ClCompile Include="base\logger\logger.cpp" />
     <ClCompile Include="base\logger\log_stream.cpp" />
     <ClCompile Include="base\logger\time_stamp.cpp" />
@@ -156,8 +160,6 @@
     <ClCompile Include="base\timer.cpp" />
     <ClCompile Include="module_db\database.cpp" />
     <ClCompile Include="module_file\file\file.cpp" />
-    <ClCompile Include="module_file\file\file_md5.cpp" />
-    <ClCompile Include="module_file\file\file_sha1.cpp" />
     <ClCompile Include="module_file\file_ctrl\file_ctrl_complete.cpp" />
     <ClCompile Include="module_file\file_ctrl\file_ctrl_incomplete.cpp" />
     <ClCompile Include="module_file\file_ctrl\file_ctrl_interface.cpp" />
@@ -174,11 +176,16 @@
     <ClCompile Include="module_handler\handler_base.cpp" />
     <ClCompile Include="module_handler\handler_file.cpp" />
     <ClCompile Include="module_handler\handler_manager.cpp" />
+    <ClCompile Include="module_handler\handler_routing.cpp" />
     <ClCompile Include="module_net\net\net_receiver_win.cpp" />
     <ClCompile Include="module_net\net_receiver.cpp" />
     <ClCompile Include="module_net\session\session.cpp" />
     <ClCompile Include="module_net\session_manager.cpp" />
+    <ClCompile Include="module_peer\partner_table.cpp" />
     <ClCompile Include="module_peer\peer_manager.cpp" />
+    <ClCompile Include="module_peer\routing\k_bucket.cpp" />
+    <ClCompile Include="module_peer\routing\node.cpp" />
+    <ClCompile Include="module_peer\routing_table.cpp" />
     <ClCompile Include="third\kcp\ikcp.c" />
     <ClCompile Include="third\md5\md5.cpp" />
     <ClCompile Include="third\sha1\sha1.c" />
@@ -191,19 +198,20 @@
     <ClInclude Include="base\buffer_pool.hpp" />
     <ClInclude Include="base\config.hpp" />
     <ClInclude Include="base\encoder.h" />
+    <ClInclude Include="base\hash_function\file_md5.h" />
+    <ClInclude Include="base\hash_function\file_sha1.h" />
     <ClInclude Include="base\logger\logger.h" />
     <ClInclude Include="base\logger\log_stream.h" />
     <ClInclude Include="base\logger\time_stamp.h" />
     <ClInclude Include="base\object_pool.hpp" />
     <ClInclude Include="base\protocol\protocol_base.h" />
     <ClInclude Include="base\protocol\protocol_file.h" />
+    <ClInclude Include="base\protocol\protocol_routing.h" />
     <ClInclude Include="base\singleton.hpp" />
     <ClInclude Include="base\thread_pool.h" />
     <ClInclude Include="base\timer.h" />
     <ClInclude Include="module_db\database.h" />
     <ClInclude Include="module_file\file\file.h" />
-    <ClInclude Include="module_file\file\file_md5.h" />
-    <ClInclude Include="module_file\file\file_sha1.h" />
     <ClInclude Include="module_file\file_ctrl\file_ctrl_complete.h" />
     <ClInclude Include="module_file\file_ctrl\file_ctrl_incomplete.h" />
     <ClInclude Include="module_file\file_ctrl\file_ctrl_interface.h" />
@@ -221,12 +229,17 @@
     <ClInclude Include="module_handler\handler_file.h" />
     <ClInclude Include="module_handler\handler_interface.h" />
     <ClInclude Include="module_handler\handler_manager.h" />
+    <ClInclude Include="module_handler\handler_routing.h" />
     <ClInclude Include="module_net\net\nat_type.hpp" />
     <ClInclude Include="module_net\net\net_receiver_win.h" />
     <ClInclude Include="module_net\net_receiver.h" />
     <ClInclude Include="module_net\session\session.h" />
     <ClInclude Include="module_net\session_manager.h" />
+    <ClInclude Include="module_peer\partner_table.h" />
     <ClInclude Include="module_peer\peer_manager.h" />
+    <ClInclude Include="module_peer\routing\k_bucket.h" />
+    <ClInclude Include="module_peer\routing\node.h" />
+    <ClInclude Include="module_peer\routing_table.h" />
     <ClInclude Include="third\kcp\ikcp.h" />
     <ClInclude Include="third\md5\md5.h" />
     <ClInclude Include="third\sha1\sha1.h" />

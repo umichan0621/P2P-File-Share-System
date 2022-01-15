@@ -26,6 +26,8 @@
 #pragma warning(disable : 26812)
 
 constexpr uint16_t	ERROR_SESSION_ID = 0xffff;
+constexpr uint8_t	KSOCKADDR_LEN_V6 = 28;
+
 namespace peer
 {
 	enum PeerStatus
@@ -44,9 +46,9 @@ namespace peer
 	private:
 		struct Peer
 		{
-			sockaddr* PeerAddress;	//存储Peer的地址
+			sockaddr*	PeerAddress;	//存储Peer的地址
 			uint8_t		Count;			//记录同时使用当前Peer的数量
-			PeerStatus	Status;			//Peer的状态
+			uint8_t	    Status;			//Peer的状态
 			Peer() :
 				PeerAddress(nullptr),
 				Count(0),
@@ -99,12 +101,10 @@ namespace peer
 		//每次调用引用+1
 		int32_t peer_id(sockaddr* pSockaddr);
 
-		int32_t peer_id(uint16_t SessionId);
-
 		//返回Peer的引用
-		sockaddr* peer(int32_t PeerId, PeerStatus& Status);
+		sockaddr* peer(int32_t PeerId, uint8_t& Status);
 
-		PeerStatus peer_status(int32_t PeerId);
+		uint8_t peer_status(int32_t PeerId);
 
 		//释放一个对Peer的引用
 		//每次调用引用-1
@@ -118,9 +118,9 @@ namespace peer
 		//将一个Peer加入黑名单，路由表不再记录它的信息
 		void ban_peer(sockaddr* pSockaddr);
 
-		sockaddr* get_sockaddr(const char* pIPAddress, uint16_t Port) const;
+		sockaddr* get_sockaddr(const char* pIPAddressess, uint16_t Port) const;
 
-		sockaddr* get_sockaddr6(const char* pIPAddress, uint16_t Port) const;
+		sockaddr* get_sockaddr6(const char* pIPAddressess, uint16_t Port) const;
 
 		//根据输入的Sockaddr得到一个已连接的SessionId
 		//返回0表示当前sockaddr未登记
@@ -155,7 +155,9 @@ namespace peer
 		//加入一个没有连接的Peer
 		void connect_push(int32_t PeerId);
 
+		static bool info(sockaddr* pSockaddr, std::string& strIP, uint16_t& Port);
 	private:
+
 		//获取一个没有使用的SessionId
 		uint16_t _session_id();
 

@@ -7,9 +7,12 @@
 #include <base/logger/logger.h>
 #include <base/protocol/protocol_file.h>
 #include <module_peer/peer_manager.h>
+#include <module_peer/routing_table.h>
+#include <module_peer/partner_table.h>
 #include <module_net/session_manager.h>
 #include <module_handler/handler_base.h>
 #include <module_handler/handler_file.h>
+#include <module_handler/handler_routing.h>
 #include <module_file/file_ctrl/file_ctrl_complete.h>
 #include <module_file/file_ctrl/file_ctrl_incomplete.h>
 #include <iostream>
@@ -20,6 +23,37 @@ static const char* DATA_BASE_PATH = "../test_debug.db";
 #else
 static const char* DATA_BASE_PATH = "../test_release.db";
 #endif
+
+//windows操作系统API封装
+//设置当前粘贴板的内容
+static bool set_clip_board(const char* pBuf, int32_t Len)
+{
+	HWND pHwnd = NULL;
+	OpenClipboard(pHwnd);//打开剪切板
+	EmptyClipboard();//清空剪切板
+	HANDLE pHandle = GlobalAlloc(GMEM_FIXED, Len + 1);//分配内存
+	if (0 == pHandle)
+	{
+		return false;
+	}
+	char* pData = (char*)GlobalLock(pHandle);//锁定内存，返回申请内存的首地址
+	if (nullptr == pData)
+	{
+		return false;
+	}
+	memcpy(pData, pBuf, Len);
+	//pData[Len] = '\0';
+	SetClipboardData(CF_TEXT, pHandle);//设置剪切板数据
+	GlobalUnlock(pHandle);//解除锁定
+	CloseClipboard();//关闭剪切板
+	return true;
+}
+
+static bool set_clip_board(const std::string& strVal)
+{
+	return set_clip_board(strVal.c_str(), strVal.size());
+}
+//windows操作系统API封装
 
 AppCtrl::AppCtrl() :
 	m_pMoudleGui(new MoudleGui()),
@@ -33,6 +67,8 @@ AppCtrl::~AppCtrl(){}
 
 bool AppCtrl::init()
 {
+	//根据时间生成随机种子
+	srand(base::now_milli());
 	//初始化数据库
 	if (false == m_pMoudleDataBase->open(DATA_BASE_PATH))
 	{
@@ -63,12 +99,17 @@ bool AppCtrl::init()
 	}
 	//设置Session连接数和路由表Peer记录数
 	g_pPeerManager->init(g_pConfig->max_connection_num(), 1024);
+	//初始化自己的PID
+	g_pRoutingTable->init();
 	//注册基本事件
 	handler::HandlerBase* pHandlerBase = new handler::HandlerBase();
 	m_pMoudleHandler->register_event(PROTOCOL_TYPE_BASE, pHandlerBase);
 	//注册文件事件
 	handler::HandlerFile* pHandlerFile = new handler::HandlerFile();
 	m_pMoudleHandler->register_event(PROTOCOL_TYPE_FILE, pHandlerFile);
+	//注册路由事件
+	handler::HandlerRouting* pHandlerRouting = new handler::HandlerRouting();
+	m_pMoudleHandler->register_event(PROTOCOL_TYPE_ROUTING, pHandlerRouting);
 	//注册Net模块的Handler方式
 	m_pMoudleNet->set_handler(m_pMoudleHandler);
 	SOCKET ListenFd, ListenFd6, ListenFdNAT;
@@ -93,24 +134,27 @@ bool AppCtrl::init()
 	return true;
 }
 
+
 void AppCtrl::start()
 {
-
-
 	int x;
 #ifndef _DEBUG//服务器
-
-#else//客户端
-	const char* p = "127.0.0.1";
-	//const char* p = "121.5.179.213";
-	uint16_t Session = g_pSessionManager->connect(p, 2342);
+	//const char* p = "127.0.0.1";
+	const char* p = "121.5.179.213";
+	uint16_t Session = g_pSessionManager->connect_tracker(p, 2342);
 	std::cin >> x;
+	m_pThreadPool->add_task(std::bind(&AppCtrl::thread_loop_search, this));
+#else//客户端
+	//const char* p = "127.0.0.1";
+	const char* p = "121.5.179.213";
+	uint16_t Session = g_pSessionManager->connect_tracker(p, 2342);
 	//启动循环下载线程
-	m_pThreadPool->add_task(std::bind(&AppCtrl::download_thread, this));
-#endif
-
+	//m_pThreadPool->add_task(std::bind(&AppCtrl::download_thread, this));
+	std::cin >> x;
+	m_pThreadPool->add_task(std::bind(&AppCtrl::thread_loop_search, this));
 	m_pMoudleGui->show();
 
+#endif
 }
 
 //初始化
@@ -210,7 +254,7 @@ void AppCtrl::init_slots()
 void AppCtrl::init_file()
 {
 	uint64_t FileSize;
-	file::SHA1 SHA1Struct;
+	base::SHA1 SHA1Struct;
 	std::string strSHA1;
 	std::string strFilePath, strFileName;
 	std::vector<int32_t> VecFileSeq;
@@ -222,7 +266,7 @@ void AppCtrl::init_file()
 		for (auto& FileSeq : VecFileSeq)
 		{
 			m_pMoudleDataBase->select_file_info(FileSeq, strSHA1);
-			file::sha1_parse(strSHA1, SHA1Struct);
+			base::sha1_parse(strSHA1, SHA1Struct);
 			m_pMoudleDataBase->select_file_info(FileSeq, strFilePath, strFileName, FileSize);
 			//载入文件
 			file::FileCtrlIncmpl* pFileCtrl = new file::FileCtrlIncmpl();
@@ -241,6 +285,8 @@ void AppCtrl::init_file()
 			{
 				g_pFileManager->add_download_file(pFileCtrl);
 				g_pFileManager->refresh_download_list();
+				//加入PartnerTable
+				g_pPartnerTable->add_cid(SHA1Struct);
 				//GUI显示
 				emit(new_download(FileSeq, STATUS_DOWNLOAD, FileSize, QString::fromStdString(strFileName)));
 			}
@@ -253,7 +299,7 @@ void AppCtrl::init_file()
 		for (auto& FileSeq : VecFileSeq)
 		{
 			m_pMoudleDataBase->select_file_info(FileSeq, strSHA1);
-			file::sha1_parse(strSHA1, SHA1Struct);
+			base::sha1_parse(strSHA1, SHA1Struct);
 			//GUI显示
 			m_pMoudleDataBase->select_file_info(FileSeq, strFilePath, strFileName, FileSize);
 			emit(new_download(FileSeq, STATUS_PAUSE, FileSize, QString::fromStdString(strFileName)));
@@ -266,7 +312,7 @@ void AppCtrl::init_file()
 		for (auto& FileSeq : VecFileSeq)
 		{
 			m_pMoudleDataBase->select_file_info(FileSeq, strSHA1);
-			file::sha1_parse(strSHA1, SHA1Struct);
+			base::sha1_parse(strSHA1, SHA1Struct);
 
 			//GUI显示
 			m_pMoudleDataBase->select_file_info(FileSeq, strFilePath, strFileName, FileSize);
@@ -280,7 +326,7 @@ void AppCtrl::init_file()
 		for (auto& FileSeq : VecFileSeq)
 		{
 			m_pMoudleDataBase->select_file_info(FileSeq, strSHA1);
-			file::sha1_parse(strSHA1, SHA1Struct);
+			base::sha1_parse(strSHA1, SHA1Struct);
 			m_pMoudleDataBase->select_file_info(FileSeq, strFilePath, strFileName, FileSize);
 			//载入文件
 			file::FileCtrlCmpl* pFileCtrl = new file::FileCtrlCmpl();
@@ -298,7 +344,8 @@ void AppCtrl::init_file()
 			{
 				//加入内存中的分享列表
 				g_pFileManager->add_share_file(pFileCtrl);
-
+				//加入PartnerTable
+				g_pPartnerTable->add_cid(SHA1Struct);
 				//GUI显示
 				std::string CreateTime, FileName, FileRemark;
 				uint64_t UploadData;
@@ -323,12 +370,12 @@ void AppCtrl::init_config()
 
 void AppCtrl::get_link(int32_t FileSeq)
 {
-	file::SHA1 SHA1Struct;
+	base::SHA1 SHA1Struct;
 	std::string strSHA1;
 	uint64_t FileSize;
 	m_pMoudleDataBase->select_file_info(FileSeq, strSHA1);
 	m_pMoudleDataBase->select_file_size(FileSeq, FileSize);
-	file::sha1_parse(strSHA1, SHA1Struct);
+	base::sha1_parse(strSHA1, SHA1Struct);
 	char Buf[30];
 	memcpy(Buf, &SHA1Struct, 20);
 	memcpy(&Buf[20], &FileSize, 8);
@@ -374,15 +421,17 @@ void AppCtrl::open_folder(int32_t FileSeq)
 
 }
 
-void AppCtrl::download_thread()
+void AppCtrl::thread_loop_download()
 {
 	file::FileCtrl FileCtrl;
-	uint64_t LastRefreshTime = base::now_mill()-500;
+	uint64_t LastRefreshTime = base::now_milli()-500;
+	char DLReqBuf[30] = { 0 };
+	create_header(DLReqBuf, PROTOCOL_FILE_FRAGMENT_REQ);
 	for (;;)
 	{
-		if (base::now_mill() - LastRefreshTime >= 500)
+		if (base::now_milli() - LastRefreshTime >= 500)
 		{
-			LastRefreshTime = base::now_mill();
+			LastRefreshTime = base::now_milli();
 			//更新进度
 			std::vector<file::DownloadStatus> VecStatus;
 			g_pFileManager->download_status(VecStatus);
@@ -427,30 +476,75 @@ void AppCtrl::download_thread()
 			//获取下载任务并向Peer请求
 			{
 				//获取当前下载文件的必要信息
-				file::SHA1 SHA1Struct;
+				base::SHA1 SHA1Struct;
 				pDownloadFile->full_sha1(SHA1Struct);
 				std::string strSHA1;
-				file::sha1_value(SHA1Struct, strSHA1);
+				base::sha1_value(SHA1Struct, strSHA1);
 				//LOG_ERROR << strSHA1;
-				char TempBuf[32];
-				uint16_t HeaderLen = 30;
-				memcpy(&TempBuf[0], &HeaderLen, 2);
-				create_header(&TempBuf[2], PROTOCOL_FILE_FRAGMENT_REQ);
-				memcpy(&TempBuf[4], &SHA1Struct, 20);
-				memcpy(&TempBuf[24], &FragmentStart, 8);
+				//写入文件SHA1值和FragmentStart
+				memcpy(&DLReqBuf[2], &SHA1Struct, 20);
+				memcpy(&DLReqBuf[22], &FragmentStart, 8);
 				net::Session* pCurSession=g_pSessionManager->session(1);
-				pCurSession->send_reliable(TempBuf, 32);
+				pCurSession->send_reliable(DLReqBuf, 30);
 			}
 		}
 
-		base::delay(10 * 1000);
+		base::delay_micro(10 * 1000);
 		FileCtrl.reset();
+	}
+}
+
+void AppCtrl::thread_loop_search()
+{
+	//构造路由搜索协议头，加入固定的PID
+	//协议格式:
+	//[固定头部(2B)] +[PID(20B)]+(0-3个)[CID(20B)]
+	char SendBuf[100] = { 0 };
+	create_header(SendBuf, PROTOCOL_ROUTING_SEARCH_REQ);
+	memcpy(&SendBuf[2], g_pRoutingTable->pid(), KLEN_KEY);
+
+	std::string str;
+	base::sha1_value(g_pRoutingTable->pid(), str);
+	for (;;)
+	{
+		uint16_t SessionId = g_pPeerManager->search_pop();
+
+		if (ERROR_SESSION_ID != SessionId)
+		{
+			net::Session* pCurSession = g_pSessionManager->session(SessionId);
+			if (nullptr == pCurSession)
+			{
+				continue;
+			}
+			int32_t Pos = 2 + KLEN_KEY;
+			//获取3个CID，如果重复说明总的CID不足3个
+			std::unordered_set<base::SHA1, base::SHA1HashFunc,base::SHA1EqualFunc> CIDSet;
+			base::SHA1 CID = { 0 };
+			for (int32_t i = 0; i < 3; ++i)
+			{
+				if (false == g_pPartnerTable->get_cid(CID))
+				{
+					break;
+				}
+				CIDSet.insert(CID);
+				//base::sha1_value(CID, str);
+				//LOG_ERROR << str;
+			}
+			for (auto& CurCID : CIDSet)
+			{
+				memcpy(&SendBuf[Pos], &CurCID, KLEN_KEY);
+				Pos += KLEN_KEY;
+			}
+
+			pCurSession->send_reliable(SendBuf, Pos);
+		}
+		base::delay_micro(1 * 1000 * 1000);
 	}
 }
 
 void AppCtrl::sha1_check_thread(file::FileCtrl FileCtrl)
 {
-	file::SHA1 ActrualSHA1Struct,SHA1Struct;
+	base::SHA1 ActrualSHA1Struct,SHA1Struct;
 	FileCtrl->sha1(SHA1Struct);
 	FileCtrl->full_sha1(ActrualSHA1Struct);
 	//校验SHA1无问题
@@ -476,14 +570,14 @@ bool AppCtrl::try_add_download_file(std::string& strLink, std::string& strPath)
 		return false;
 	}
 	//解析MD5和FileSize
-	file::SHA1 SHA1Struct;
+	base::SHA1 SHA1Struct;
 	uint64_t FileSize;
 	char Buf[30];
 	base::base64_decode(strLink.c_str(), 40, Buf);
 	memcpy(&SHA1Struct, &Buf[0], 20);
 	memcpy(&FileSize, &Buf[20], 8);
 	std::string strSHA1;
-	file::sha1_value(SHA1Struct, strSHA1);
+	base::sha1_value(SHA1Struct, strSHA1);
 
 	LOG_ERROR << strSHA1;
 	LOG_ERROR << FileSize;
@@ -551,10 +645,10 @@ void AppCtrl::thread_add_share_file(std::string& strRemark, std::string& strPath
 	}
 	//获取当前文件的大小和SHA1值
 	uint64_t FileSize = pFileCtrl->size();
-	file::SHA1 SHA1Struct;
+	base::SHA1 SHA1Struct;
 	std::string strSHA1;
 	pFileCtrl->sha1(SHA1Struct);
-	file::sha1_value(SHA1Struct,strSHA1);
+	base::sha1_value(SHA1Struct,strSHA1);
 	LOG_ERROR << strSHA1;
 	int32_t FileSeq = m_pMoudleDataBase->select_file_seq(strSHA1);
 	//当前MD5的文件已在数据库中
@@ -583,33 +677,3 @@ void AppCtrl::thread_add_share_file(std::string& strRemark, std::string& strPath
 		QString::fromStdString(strRemark), QString::fromStdString(CreateTime), 0));
 	//加入内存
 }
-
-//windows操作系统API封装
-bool AppCtrl::set_clip_board(const char* pBuf, int32_t Len)
-{
-	HWND pHwnd = NULL;
-	OpenClipboard(pHwnd);//打开剪切板
-	EmptyClipboard();//清空剪切板
-	HANDLE pHandle = GlobalAlloc(GMEM_FIXED, Len+1);//分配内存
-	if (0 == pHandle)
-	{
-		return false;
-	}
-	char* pData = (char*)GlobalLock(pHandle);//锁定内存，返回申请内存的首地址
-	if (nullptr == pData)
-	{
-		return false;
-	}
-	memcpy(pData, pBuf, Len);
-	//pData[Len] = '\0';
-	SetClipboardData(CF_TEXT, pHandle);//设置剪切板数据
-	GlobalUnlock(pHandle);//解除锁定
-	CloseClipboard();//关闭剪切板
-	return true;
-}
-
-bool AppCtrl::set_clip_board(const std::string & strVal)
-{
-	return set_clip_board(strVal.c_str(), strVal.size());
-}
-//windows操作系统API封装

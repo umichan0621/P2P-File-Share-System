@@ -32,7 +32,31 @@ private://初始化
 	void init_slots();	//连接各个按钮和槽函数
 	void init_file();	//读取数据库，加载所有记录的文件
 	void init_config();	//读取配置表并设置
-signals:
+
+	//根据文件链接和保存路径，尝试添加一个下载文件
+	bool try_add_download_file(std::string& strLink, std::string& strPath);
+
+	//使用一个工作线程尝试新增一个分享文件
+	void thread_add_share_file(std::string& strRemark, std::string& strPath);
+
+	//处理接收到的信号，打开文件序号为FileSeq的文件所在的文件夹
+	void open_folder(int32_t FileSeq);
+
+	//处理接收到的信号，复制文件序号为FileSeq的文件的链接
+	void get_link(int32_t FileSeq);
+
+	//循环运行的线程，调用文件模块获取下载任务
+	//然后发送给相关联的Peer请求下载
+	void thread_loop_download();
+
+	//循环运行的线程，调用路由模块请求搜索CID和PID
+	//获取没有询问过的Peer，然后尝试搜索获取更多Peer
+	void thread_loop_search();
+
+	//计算文件的SHA1值，然后与实际的SHA1值比较
+	//结果一致表示下载完成，否则可能有问题
+	void sha1_check_thread(file::FileCtrl FileCtrl);
+signals://信号
 	//新的下载任务
 	void new_download(int32_t FileSeq, uint8_t Status, uint64_t FileSize, const QString& FileName);
 	//新的分享文件
@@ -41,19 +65,6 @@ signals:
 	//更新下载进度
 	void update_progress(int32_t FileSeq, uint64_t CurFileSize, uint64_t CurSpeed);
 	void file_complete(int32_t FileSeq);
-private:
-	bool try_add_download_file(std::string& strLink, std::string& strPath);
-	void thread_add_share_file(std::string& strRemark, std::string& strPath);
-private:
-	void open_folder(int32_t FileSeq);
-	void get_link(int32_t FileSeq);
-private://windows操作系统API封装
-	bool set_clip_board(const std::string& strVal);
-	bool set_clip_board(const char* pBuf,int32_t Len);
-private:
-	void download_thread();
-	void sha1_check_thread(file::FileCtrl FileCtrl);
-	//添加一个下载任务
 private://各个模块
 	MoudleGui*					m_pMoudleGui;
 	MoudleNet*					m_pMoudleNet;

@@ -7,6 +7,16 @@ namespace peer
 		m_PartnerMaxNum = PartnerMaxNum;
 	}
 
+	void PartnerTable::add_cid(const base::SHA1& CID)
+	{
+		std::unique_lock<std::mutex> Lock(m_PartnerMutex);
+		//ÒÑ¾­¼ÇÂ¼
+		if (0 == m_PartnerMap.count(CID))
+		{
+			m_PartnerMap[CID].clear();
+			m_CIDList.push_front(CID);
+		}
+	}
 
 	void PartnerTable::add_partner(const base::SHA1& CID, uint16_t SessionId)
 	{
@@ -47,6 +57,20 @@ namespace peer
 		}
 	}
 
+	bool PartnerTable::search_partner(const base::SHA1& CID, uint16_t SessionId)
+	{
+		std::unique_lock<std::mutex> Lock(m_PartnerMutex);
+		if (0 == m_PartnerMap.count(CID))
+		{
+			return false;
+		}
+		if (0 == m_PartnerMap[CID].count(SessionId))
+		{
+			return false;
+		}
+		return true;
+	}
+
 	void PartnerTable::delete_cid(const base::SHA1& CID)
 	{
 		std::unique_lock<std::mutex> Lock(m_PartnerMutex);
@@ -73,6 +97,26 @@ namespace peer
 		}
 	}
 
+	bool PartnerTable::search_cid(const base::SHA1& CID)
+	{
+		std::unique_lock<std::mutex> Lock(m_PartnerMutex);
+		return 0 != m_PartnerMap.count(CID);
+	}
+
+	bool PartnerTable::search_cid(const base::SHA1& CID, std::list<uint16_t>& PartnerList)
+	{
+		std::unique_lock<std::mutex> Lock(m_PartnerMutex);
+		if (0 == m_PartnerMap.count(CID))
+		{
+			return false;
+		}
+		for (auto& Partner : m_PartnerMap[CID])
+		{
+			PartnerList.push_back(Partner);
+		}
+		return true;
+	}
+
 	bool PartnerTable::get_cid(base::SHA1& CID)
 	{
 		if (true == m_CIDList.empty())
@@ -96,4 +140,5 @@ namespace peer
 		}
 		return false;
 	}
+
 }

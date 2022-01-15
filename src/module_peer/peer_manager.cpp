@@ -46,8 +46,10 @@ namespace peer
 			--m_PeerCapacity;
 			int32_t CurId = _peer_id();
 			m_PeerIdMap[pSockaddr] = CurId;
-
-			m_PeerMap[CurId] = Peer(pSockaddr);
+			//复制外部输入作为内部使用的sockaddr*
+			sockaddr_in6* pSockaddrTemp = m_SockaddrPool.allocate();
+			memcpy(pSockaddrTemp, (sockaddr_in6*)pSockaddr, KSOCKADDR_LEN_V6);
+			m_PeerMap[CurId] = Peer((sockaddr*)pSockaddrTemp);
 			return CurId;
 		}
 		int32_t CurId = m_PeerIdMap[pSockaddr];
@@ -58,12 +60,7 @@ namespace peer
 		return CurId;
 	}
 
-	int32_t PeerManager::peer_id(uint16_t SessionId)
-	{
-		return -1;
-	}
-
-	sockaddr* PeerManager::peer(int32_t PeerId, PeerStatus& Status)
+	sockaddr* PeerManager::peer(int32_t PeerId, uint8_t& Status)
 	{
 		std::lock_guard<std::mutex> Lock(m_PeerManagerMutex);
 		if (0 == m_PeerMap.count(PeerId))
@@ -74,7 +71,7 @@ namespace peer
 		return m_PeerMap[PeerId].PeerAddress;
 	}
 
-	PeerStatus PeerManager::peer_status(int32_t PeerId)
+	uint8_t PeerManager::peer_status(int32_t PeerId)
 	{
 		std::lock_guard<std::mutex> Lock(m_PeerManagerMutex);
 		if (0 == m_PeerMap.count(PeerId))
@@ -146,20 +143,20 @@ namespace peer
 		}
 	}
 
-	sockaddr* PeerManager::get_sockaddr(const char* pIPAddress, uint16_t Port) const
+	sockaddr* PeerManager::get_sockaddr(const char* pIPAddressess, uint16_t Port) const
 	{
 		sockaddr_in* pSockaddr = (sockaddr_in*)new sockaddr_in6();
 		pSockaddr->sin_family = AF_INET;
-		inet_pton(AF_INET, pIPAddress, &pSockaddr->sin_addr);		//设定新连接的IP
+		inet_pton(AF_INET, pIPAddressess, &pSockaddr->sin_addr);		//设定新连接的IP
 		pSockaddr->sin_port = htons(Port);							//设定新连接的端口
 		return (sockaddr*)pSockaddr;
 	}
 
-	sockaddr* PeerManager::get_sockaddr6(const char* pIPAddress, uint16_t Port) const
+	sockaddr* PeerManager::get_sockaddr6(const char* pIPAddressess, uint16_t Port) const
 	{
 		sockaddr_in6* pSockaddr = new sockaddr_in6();
 		pSockaddr->sin6_family = AF_INET6;
-		inet_pton(AF_INET6, pIPAddress, &pSockaddr->sin6_addr);		//设定新连接的IP
+		inet_pton(AF_INET6, pIPAddressess, &pSockaddr->sin6_addr);		//设定新连接的IP
 		pSockaddr->sin6_port = htons(Port);							//设定新连接的端口
 		return (sockaddr*)pSockaddr;
 	}
@@ -347,5 +344,38 @@ namespace peer
 	{
 		std::lock_guard<std::mutex> Lock(m_ConnectMutex);
 		m_PrepareToConnect.push_back(PeerId);
+	}
+
+	bool PeerManager::info(sockaddr* pSockaddr, std::string& strIP, uint16_t& Port)
+	{
+		if (AF_INET == pSockaddr->sa_family)//IPV4
+		{
+			char Buf[INET_ADDRSTRLEN];
+			Port = ntohs(((sockaddr_in*)pSockaddr)->sin_port);
+			if (NULL != inet_ntop(pSockaddr->sa_family, &((sockaddr_in*)pSockaddr)->sin_addr,
+				Buf, INET_ADDRSTRLEN))
+			{
+				strIP = Buf;
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else if (AF_INET6 == pSockaddr->sa_family)//IPV6
+		{
+			char Buf[INET6_ADDRSTRLEN];
+			Port = ntohs(((sockaddr_in6*)pSockaddr)->sin6_port);
+			if (NULL != inet_ntop(pSockaddr->sa_family, &((sockaddr_in6*)pSockaddr)->sin6_addr,
+				Buf, INET_ADDRSTRLEN))
+			{
+				strIP = Buf;
+			}
+			else
+			{
+				return false;
+			}
+		}
+		return true;
 	}
 }

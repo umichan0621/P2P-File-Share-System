@@ -30,6 +30,7 @@ namespace base
 	};
 
 	void sha1_value(const SHA1& SHA1Struct, std::string& strSHA1);
+	void sha1_value(const uint8_t* Key, std::string& strSHA1);
 	bool sha1_parse(const std::string& strSHA1, SHA1& SHA1Struct);
 	bool sha1_equal(const SHA1& SHA1Struct1, const SHA1& SHA1Struct2);
 	//自定义MD5数据结构的哈希函数

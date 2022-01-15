@@ -1,4 +1,4 @@
-﻿#include "handler_manager.h"
+﻿    #include "handler_manager.h"
 #include <base/timer.h>
 #include <base/logger/logger.h>
 #include <base/protocol/protocol_base.h>
@@ -6,6 +6,32 @@
 
 namespace handler
 {
+	static bool heartbeat_examine(uint16_t SessionId)
+	{
+		net::Session* pCurSession = g_pSessionManager->session(SessionId);
+		if (nullptr == pCurSession)
+		{
+			return true;
+		}
+		//当前连接断开，终止定时器
+		if (SessionStatus::STATUS_CONNECT_COMPLETE != pCurSession->status())
+		{
+			return true;
+		}
+		//读取超时次数
+		uint8_t TimeoutCount = pCurSession->timeout();
+		//LOG_TRACE << "TIME OUT " << TimeoutCount;
+		if (3 == TimeoutCount)
+		{
+			//断开连接
+			pCurSession->set_status(SessionStatus::STATUS_DISCONNECT);
+			LOG_TRACE << "Session ID = " << SessionId << " disconnect, Reason:Timeout.";
+			g_pSessionManager->disconnect_in_timer(SessionId);
+			return true;
+		}
+		return false;
+	}
+
 	HandlerManager::HandlerManager()
 	{
 		//注册协议处理方法
@@ -35,7 +61,7 @@ namespace handler
 		pCurSession->set_status(SessionStatus::STATUS_CONNECT_COMPLETE);
 		pCurSession->reset_timeout();
 		//启动定时器定时检测心跳包判断连接状态
-		g_pTimer->add_timer(HEARTBEAT_CLOCK, std::bind(&HandlerManager::heartbeat_examine, this, SessionId));
+		g_pTimer->add_timer(HEARTBEAT_CLOCK, std::bind(heartbeat_examine, SessionId));
 		std::string strIpAddr;
 		uint16_t Port;
 		pCurSession->get_session_info(strIpAddr, Port);
@@ -84,44 +110,36 @@ namespace handler
 			//读取Session的Recv缓存，返回nullptr表示当前没有完整的数据
 			//如果不为nullptr，当前Buffer会在内部计数器+1
 			//处理完数据后需要使用read_over释放计数器
-			char* pBuf= pCurSession->read(BufLen);
+			for (;;)
+			{
+				char* pBuf = pCurSession->read(BufLen);
 
-			if (nullptr == pBuf)
-			{
-				return DO_NOTHING;
-			}
-			//{
-			//	char* buf = new char[100];
-			//	memcpy(buf, pBuf, 100);
-			//	LOG_ERROR << buf;
-			//	return DO_NOTHING;
-			//}
-			//没有基础头协议，可能是心跳包
-			if (BufLen <= BASE_HEADER_LEN)
-			{
-				pCurSession->read_over();
-				return DO_NOTHING;
-			}
-			parse_type(pBuf, ProtocolType);
-			//利用多态处理不同类型的协议
-			HandlerInterface* pEvent = m_RecvEventMap[ProtocolType];
-			if (nullptr != pEvent)
-			{
-				int8_t Res = pEvent->handle_event(SessionId, pBuf, BufLen);
-				//处理之后判断应该断开连接
-				if (DO_DISCONNECT == Res)
+				if (nullptr == pBuf)
+				{
+					return DO_NOTHING;
+				}
+				//没有基础头协议，可能是心跳包
+				if (BufLen < BASE_HEADER_LEN)
 				{
 					pCurSession->read_over();
-					return DO_DISCONNECT;
+					continue;
 				}
-				//处理之后回复当前Peer
-				if (DO_REPLY == Res)
+				parse_type(pBuf, ProtocolType);
+				//利用多态处理不同类型的协议
+				HandlerInterface* pEvent = m_RecvEventMap[ProtocolType];
+				if (nullptr != pEvent)
 				{
-					pCurSession->send_reliable(pMessage, BufLen);
+					int8_t Res = pEvent->handle_event(SessionId, pBuf, BufLen);
+					//处理之后判断应该断开连接
+					if (DO_DISCONNECT == Res)
+					{
+						pCurSession->read_over();
+						return DO_DISCONNECT;
+					}
 				}
+				//释放Buffer计数器，避免扩容时写入读取中的Buffer
+				pCurSession->read_over();
 			}
-			//释放Buffer计数器，避免扩容时写入读取中的Buffer
-			pCurSession->read_over();
 		}
 		//不可靠协议
 		else
@@ -150,28 +168,4 @@ namespace handler
 		return DO_NOTHING;
 	}
 
-	bool HandlerManager::heartbeat_examine(uint16_t SessionId)
-	{
-		net::Session* pCurSession = g_pSessionManager->session(SessionId);
-		if (nullptr == pCurSession)
-		{
-			return true;
-		}
-		//当前连接断开，终止定时器
-		if (SessionStatus::STATUS_CONNECT_COMPLETE != pCurSession->status())
-		{
-			return true;
-		}
-		//读取超时次数
-		uint8_t TimeoutCount = pCurSession->timeout();
-		if (3 == TimeoutCount)
-		{
-			//断开连接
-			pCurSession->set_status(SessionStatus::STATUS_DISCONNECT);
-			g_pSessionManager->disconnect(SessionId);
-			LOG_TRACE << "Session ID = " << SessionId << " disconnect, Reason:Timeout.";
-			return true;
-		}
-		return false;
-	}
 }

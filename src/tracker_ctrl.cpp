@@ -1,7 +1,11 @@
 ﻿#include "tracker_ctrl.h"
 #include <base/timer.h>
 #include <module_handler/handler_base.h>
+#include <module_handler/handler_routing.h>
 #include <module_net/session_manager.h>
+#include <base/logger/logger.h>
+#include <module_peer/routing_table.h>
+#include <module_peer/peer_manager.h>
 
 TrackerCtrl::TrackerCtrl():
 	m_pMoudleNet(new MoudleNet()),
@@ -23,6 +27,12 @@ bool TrackerCtrl::init()
 	{
 		return false;
 	}
+	//设置Session连接数和路由表Peer记录数
+	g_pPeerManager->init(g_pConfig->max_connection_num(), 1024);
+	//初始化自己的PID
+	g_pRoutingTable->init();
+
+	//LOG_ERROR << g_pConfig->max_connection_num();
 	//初始化被动接收的Net模块
 	uint16_t Port, Port6;
 	g_pConfig->port(Port, Port6);
@@ -31,10 +41,12 @@ bool TrackerCtrl::init()
 	{
 		return false;
 	}
-	g_pPeerManager->init(g_pConfig->max_connection_num(), 1024);
 	//注册基本事件
 	handler::HandlerBase* pHandlerBase = new handler::HandlerBase();
 	m_pMoudleHandler->register_event(PROTOCOL_TYPE_BASE, pHandlerBase);
+	//注册路由事件
+	handler::HandlerRouting* pHandlerRouting = new handler::HandlerRouting();
+	m_pMoudleHandler->register_event(PROTOCOL_TYPE_ROUTING, pHandlerRouting);
 	//注册Net模块的Handler方式
 	m_pMoudleNet->set_handler(m_pMoudleHandler);
 	SOCKET ListenFd, ListenFd6, ListenFdNAT;

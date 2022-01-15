@@ -22,15 +22,16 @@ namespace handler
 		int8_t handle_connect_req(uint16_t& SessionId, char* pMessage, uint16_t& Len);
 		int8_t handle_connect_ack(uint16_t& SessionId, char* pMessage, uint16_t& Len);
 		int8_t handle_connect_rfs(uint16_t& SessionId, char* pMessage, uint16_t& Len);
+		int8_t handle_connect_help_req(uint16_t& SessionId, char* pMessage, uint16_t& Len);
+		int8_t handle_connect_help_ack(uint16_t& SessionId, char* pMessage, uint16_t& Len);
+		int8_t handle_connect_help_rfs(uint16_t& SessionId, char* pMessage, uint16_t& Len);
 		int8_t handle_ping_req(uint16_t& SessionId, char* pMessage, uint16_t& Len);
 		int8_t handle_ping_ack(uint16_t& SessionId, char* pMessage, uint16_t& Len);
+		int8_t handle_ping_help(uint16_t& SessionId, char* pMessage, uint16_t& Len);
 		int8_t handle_heartbeat_req(uint16_t& SessionId, char* pMessage, uint16_t& Len);
-		//int8_t handle_heartbeat_ack(uint16_t& SessionId, char* pMessage, uint16_t& Len);
 		int8_t handle_disconnect(uint16_t& SessionId, char* pMessage, uint16_t& Len);
 		int8_t handle_nat_probe_req(uint16_t& SessionId, char* pMessage, uint16_t& Len);
 		int8_t handle_nat_probe_ack(uint16_t& SessionId, char* pMessage, uint16_t& Len);
-	private:
-		bool heartbeat_probe(uint16_t SessionId);
 	private:
 		HandlerMap		m_RecvHandlerMap;
 	};

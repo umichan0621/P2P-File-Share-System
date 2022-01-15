@@ -1,4 +1,5 @@
 #include "routing_table.h"
+#include <base/logger/logger.h>
 
 namespace peer
 {
@@ -18,6 +19,7 @@ namespace peer
 	void RoutingTable::add_node(Node& N)
 	{
 		uint8_t Distance = N.distance(m_Key);
+		LOG_ERROR << "Distance = " << Distance;
 		m_VecKBucket[Distance].add_node(N);
 	}
 

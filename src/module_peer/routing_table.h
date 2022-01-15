@@ -19,6 +19,7 @@ namespace peer
 	 */
 	class RoutingTable
 	{
+	public:
 		void init();
 
 		//返回自己随机生成的PID，用于向其他节点登记信息
@@ -31,7 +32,7 @@ namespace peer
 		//如果DHT中的总节点数小于ALPHA，只返回总的数量
 		void get_node(const uint8_t Key[], std::list<int32_t>& PeerList);
 	private:
-		uint8_t						m_Key[KLEN_KEY];
+		uint8_t						m_Key[KLEN_KEY] = { 0 };
 		KBucket						m_VecKBucket[160];
 	};
 }

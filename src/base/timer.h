@@ -6,11 +6,12 @@
 /* Reference:https://cloud.tencent.com/developer/article/1361827	   */
 /***********************************************************************/
 #pragma once
-#include <functional>
 #include <list>
-#include <unordered_set>
 #include <mutex>
 #include <chrono>
+#include <thread>
+#include <functional>
+#include <unordered_set>
 #include <base/singleton.hpp>
 
 namespace base
@@ -87,20 +88,29 @@ namespace base
 	}
 
 	//当前线程空转MircoSec微秒，CPU时间片不会被其他线程剥夺
-	inline void delay(int64_t MircoSec)
+	
+	inline void delay_micro(int64_t MicroSec)
 	{
 		int64_t Start = std::chrono::duration_cast<microseconds>(system_clock::now().time_since_epoch()).count();
 		for (;;)
 		{
 			int64_t Delta = std::chrono::duration_cast<microseconds>(system_clock::now().time_since_epoch()).count() - Start;
-			if (Delta >= MircoSec)
+			if (Delta >= MicroSec)
 			{
 				return;
 			}
 		}
 	}
 
-	inline uint64_t now_mill()
+	inline void sleep_milli(int64_t MilliSec)
+	{
+		high_resolution_clock::time_point BeignTime = high_resolution_clock::now();
+		BeignTime += milliseconds(MilliSec);
+		std::this_thread::sleep_until(BeignTime);
+	}
+
+	//返回当前时间，单位是毫秒
+	inline uint64_t now_milli()
 	{
 		return std::chrono::duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 	}

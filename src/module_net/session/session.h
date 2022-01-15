@@ -43,6 +43,7 @@ namespace net
 		uint8_t timeout();
 		SessionStatus status();
 		void set_status(SessionStatus Status);
+		sockaddr* get_sockaddr();
 	public://初始化和重置
 		bool init(sockaddr* pSockaddr,SOCKET ListenFd,SOCKET ListenFdNAT);	//初始化session
 		void init_kcp(uint32_t Conv);
@@ -54,11 +55,15 @@ namespace net
 		void input(char* pMessage, uint16_t Len);			//解析KCP数据并写入Recv缓存
 		char* read(uint16_t& Len);
 		void read_over();
+		//发送可靠消息，连接不断的情况下一定能够收到
 		void send_reliable(const char* pMessage, uint16_t Len);
+
+		//发送几段拼接起来的数据，用于发送长数据
 		void send_reliable(std::vector<const char*>& VecMessage, std::vector <uint16_t>& VecLen);
 		bool get_session_info(std::string& strIpAddr, uint16_t& Port);//获取IP地址和端口
 		bool update();
 	public:
+		int32_t peer_id();
 		peer::PeerInfo* peer_info();
 	private:
 		static uint32_t _clock();

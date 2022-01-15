@@ -1,13 +1,319 @@
 ﻿#include "session_manager.h"
-#include <base/logger/logger.h>
 #include <base/timer.h>
+#include <base/config.hpp>
+#include <base/logger/logger.h>
 #include <base/protocol/protocol_base.h>
 #include <module_net/net/nat_type.hpp>
-#include <base/config.hpp>
+#include <module_peer/routing_table.h>
+#ifndef TRACKER_MODE
+#include <module_peer/partner_table.h>
+#endif
+//定时器任务
+static bool try_connect_tracker(uint16_t SessionId)
+{
+	static uint16_t TriggerTimes = 0;
+	//连接服务器超时
+	if (++TriggerTimes >= CONNECT_TIMEOUT_COUNT)
+	{
+		LOG_DEBUG << "fail to connect";
+		g_pSessionManager->disconnect_in_timer(SessionId);
+		return true;
+	}
+	net::Session* pCurSession = g_pSessionManager->session(SessionId);
+	if (nullptr == pCurSession)
+	{
+		return true;
+	}
+	char pMessage[2];
+	//如果之前建立了连接，对端可能还保持着连接信息，让它先断开
+	if (1 == TriggerTimes)
+	{
+		create_header(pMessage, PROTOCOL_BASE_DISCONNECT);
+		pCurSession->send(pMessage, BASE_HEADER_LEN);
+	}
+	SessionStatus CurStatus = pCurSession->status();
+
+	if (SessionStatus::STATUS_CONNECT_COMPLETE == CurStatus ||//已连接，结束定时器
+		SessionStatus::STATUS_NULL == CurStatus)//连接失败，结束定时器
+	{
+		return true;
+	}
+
+	//当前未ping成功
+	if (SessionStatus::STATUS_DISCONNECT == CurStatus)
+	{
+		create_header(pMessage, PROTOCOL_BASE_PING_REQ);
+	}
+	else
+	{
+		create_header(pMessage, PROTOCOL_BASE_CONNECT_REQ);
+	}
+	pCurSession->send(pMessage, BASE_HEADER_LEN);
+	return false;
+}
+
+static bool try_nat_probe_tracker(uint16_t SessionId)
+{
+	static uint16_t TriggerTimes = 0;
+	net::Session* pCurSession = g_pSessionManager->session(SessionId);
+	if (nullptr == pCurSession)
+	{
+		return true;
+	}
+	//已经判明NAT类型
+	if (g_pHostNatType->get_nat_type() != NAT_TYPE::NAT_TYPE_NULL)
+	{
+		//如果当前状态下连接未建立，则断开连接
+		if (SessionStatus::STATUS_DISCONNECT == pCurSession->status())
+		{
+			g_pSessionManager->disconnect(SessionId);
+		}
+		return true;
+	}
+	if (++TriggerTimes >= NAT_PROBE_TIMEOUT_COUNT)
+	{
+		//如果当前状态下连接未建立，则断开连接
+		if (SessionStatus::STATUS_DISCONNECT == pCurSession->status())
+		{
+			g_pSessionManager->disconnect_in_timer(SessionId);
+		}
+		//超时，可能自身NAT类型为C-，也可能是对端节点的问题
+		LOG_TRACE << "NAT = C-";
+		g_pHostNatType->set_nat_type(NAT_TYPE::NAT_TYPE_C_MINUS);
+		return true;
+	}
+	char pMessage[2];
+	create_header(pMessage, PROTOCOL_BASE_NAT_TYPE_PROBE_REQ);
+	pCurSession->send(pMessage, BASE_HEADER_LEN);
+	return false;
+}
+
+static bool try_ping_probe_tracker(uint16_t SessionId)
+{
+	static uint16_t TriggerTimes = 0;
+	if (TriggerTimes == PING_TIMEOUT_COUNT)
+	{
+		return true;
+	}
+
+	net::Session* pCurSession = g_pSessionManager->session(SessionId);
+	if (nullptr == pCurSession)
+	{
+		return true;
+	}
+	SessionStatus CurStatus = pCurSession->status();
+	if (CurStatus == SessionStatus::STATUS_PING_COMPLETE ||
+		CurStatus == SessionStatus::STATUS_CONNECT_COMPLETE)
+	{
+		return true;
+	}
+	char pMessage[2];
+	create_header(pMessage, PROTOCOL_BASE_PING_REQ);
+	pCurSession->send(pMessage, BASE_HEADER_LEN);
+	return false;
+}
+
+static bool recycle_session(uint16_t SessionId)
+{
+	LOG_TRACE << "Session ID:" << SessionId << " recycle.";
+	g_pPeerManager->recycle_session(SessionId);
+	return true;
+}
+
+static bool check_connect_peer_status(uint16_t SessionId)
+{
+	//检查当前Peer的连接状态，如果找中间节点协助都连接不上就放弃连接
+	//当前任务交给定时器延时执行
+	net::Session* pCurSession = g_pSessionManager->session(SessionId);
+	if (nullptr == pCurSession)
+	{
+		return true;
+	}
+	SessionStatus CurStatus = pCurSession->status();
+	//给定时间内没有连接成功
+	if (SessionStatus::STATUS_CONNECT_COMPLETE != CurStatus)
+	{
+		g_pSessionManager->disconnect_in_timer(SessionId);
+	}
+	return true;
+
+}
+
+static bool try_connect_peer_once(base::SHA1 CID, uint16_t SessionId)
+{
+	static uint16_t TriggerTimes = 0;
+	net::Session* pCurSession = g_pSessionManager->session(SessionId);
+	if (nullptr == pCurSession)
+	{
+		return true;
+	}
+	//连接服务器超时
+	if (++TriggerTimes >= CONNECT_TIMEOUT_COUNT)
+	{
+		g_pSessionManager->disconnect_in_timer(SessionId);
+		return true;
+	}
+	char pMessage[2];
+	//如果之前建立了连接，对端可能还保持着连接信息，让它先断开
+	if (1 == TriggerTimes)
+	{
+		create_header(pMessage, PROTOCOL_BASE_DISCONNECT);
+		pCurSession->send(pMessage, BASE_HEADER_LEN);
+	}
+	SessionStatus CurStatus = pCurSession->status();
+	//连接失败，结束定时器
+	if (SessionStatus::STATUS_NULL == CurStatus)
+	{
+		return true;
+	}
+
+	//已连接，结束定时器,CID加入RoutingTable或者PartnerTable
+	if (SessionStatus::STATUS_CONNECT_COMPLETE == CurStatus)
+	{
+
+#ifndef TRACKER_MODE
+		//如果命中PartnerTable
+		if (true == g_pPartnerTable->search_cid(CID))
+		{
+			g_pPartnerTable->add_partner(CID, SessionId);
+			return true;
+		}
+#endif
+		//加入路由表
+		int32_t PeerId = g_pPeerManager->peer_id(pCurSession->get_sockaddr());
+		if (PeerId >= 0)
+		{
+			peer::Node CurNode(CID.Hash, PeerId);
+			g_pRoutingTable->add_node(CurNode);
+		}
+		return true;
+	}
+
+	//当前未ping成功
+	if (SessionStatus::STATUS_DISCONNECT == CurStatus)
+	{
+		create_header(pMessage, PROTOCOL_BASE_PING_REQ);
+	}
+	else
+	{
+		create_header(pMessage, PROTOCOL_BASE_CONNECT_REQ);
+	}
+	pCurSession->send(pMessage, BASE_HEADER_LEN);
+	return false;
+}
+
+static bool first_try_connect_peer(base::SHA1 CID, uint16_t TargetSessionId, uint16_t RealySessionId)
+{
+	//先尝试直接连接，如果连不上通过中间节点再尝试连接
+	static uint16_t TriggerTimes = 0;
+	net::Session* pTargetSession = g_pSessionManager->session(TargetSessionId);
+	if (nullptr == pTargetSession)
+	{
+		return true;
+	}
+	//连接服务器超时
+	if (++TriggerTimes >= CONNECT_TIMEOUT_COUNT)
+	{
+		LOG_DEBUG << "fail to connect, will try connect by relay node.";
+		//尝试通过中间节点连接，然后终止当前任务
+		net::Session* pRelaySession = g_pSessionManager->session(RealySessionId);
+		if (nullptr == pRelaySession)
+		{
+			return true;
+		}
+		sockaddr_in6* pTargetSockaddr6 = (sockaddr_in6*)pTargetSession->get_sockaddr();
+		char SendBuf[50] = { 0 };
+		create_header(SendBuf, PROTOCOL_BASE_CONNECT_HELP_REQ);
+		memcpy(&SendBuf[2], pTargetSockaddr6, KSOCKADDR_LEN_V6);
+		memcpy(&SendBuf[2 + KSOCKADDR_LEN_V6], &CID, KLEN_KEY);
+		//向中间节点发送请求
+		pRelaySession->send_reliable(SendBuf, 50);
+		//添加定时器，10s后如果没有连接成功直接释放连接
+		if (false == g_pTimer->add_timer_lockless(10 * 1000,
+			std::bind(check_connect_peer_status, TargetSessionId)))
+		{
+			LOG_ERROR << "Fail to create check connect peer status timer...";
+		}
+		return true;
+	}
+	char pMessage[2];
+	//如果之前建立了连接，对端可能还保持着连接信息，让它先断开
+	if (1 == TriggerTimes)
+	{
+		create_header(pMessage, PROTOCOL_BASE_DISCONNECT);
+		pTargetSession->send(pMessage, BASE_HEADER_LEN);
+	}
+	SessionStatus CurStatus = pTargetSession->status();
+	//连接失败，结束定时器
+	if (SessionStatus::STATUS_NULL == CurStatus)
+	{
+		return true;
+	}
+
+	//已连接，结束定时器,CID加入RoutingTable或者PartnerTable
+	if (SessionStatus::STATUS_CONNECT_COMPLETE == CurStatus)
+	{
+
+#ifndef TRACKER_MODE
+		//如果命中PartnerTable
+		if (true == g_pPartnerTable->search_cid(CID))
+		{
+			g_pPartnerTable->add_partner(CID, TargetSessionId);
+			return true;
+		}
+#endif
+		//加入路由表
+		int32_t PeerId = g_pPeerManager->peer_id(pTargetSession->get_sockaddr());
+		if (PeerId >= 0)
+		{
+			peer::Node CurNode(CID.Hash,PeerId);
+			g_pRoutingTable->add_node(CurNode);
+		}
+		return true;
+	} 
+
+	//当前未ping成功
+	if (SessionStatus::STATUS_DISCONNECT == CurStatus)
+	{
+		create_header(pMessage, PROTOCOL_BASE_PING_REQ);
+	}
+	else
+	{
+		create_header(pMessage, PROTOCOL_BASE_CONNECT_REQ);
+	}
+	pTargetSession->send(pMessage, BASE_HEADER_LEN);
+	return false;
+}
+
+static bool try_ping_peer_once(uint16_t TargetSessionId)
+{
+	static uint16_t TriggerTimes = 0;
+	if (TriggerTimes == PING_TIMEOUT_COUNT)
+	{
+		return true;
+	}
+
+	net::Session* pCurSession = g_pSessionManager->session(TargetSessionId);
+	if (nullptr == pCurSession)
+	{
+		return true;
+	}
+	SessionStatus CurStatus = pCurSession->status();
+	if (CurStatus == SessionStatus::STATUS_PING_COMPLETE ||
+		CurStatus == SessionStatus::STATUS_CONNECT_COMPLETE)
+	{
+		return true;
+	}
+	char pMessage[2];
+	create_header(pMessage, PROTOCOL_BASE_PING_REQ);
+	pCurSession->send(pMessage, BASE_HEADER_LEN);
+	return false;
+}
+
+//定时器任务
 
 namespace net
 {
-
 	Session* SeesionManager::session(uint16_t SessionId)
 	{
 		return m_SessionArr[SessionId];
@@ -45,19 +351,6 @@ namespace net
 		return true;
 	}
 
-	sockaddr* SeesionManager::delete_session(uint16_t SessionId)
-	{
-		if (nullptr == m_SessionArr[SessionId])
-		{
-			return nullptr;
-		}
-		std::lock_guard<std::mutex> Lock(m_SessionMutex);
-		m_SessionPool.release(m_SessionArr[SessionId]);
-		sockaddr* pTemp=m_SessionArr[SessionId]->reset();
-		m_SessionArr[SessionId] = nullptr;
-		return pTemp;
-	}
-
 	peer::PeerInfo* SeesionManager::peer_info(uint16_t SessionId)
 	{
 		Session* pCurSession = session(SessionId);
@@ -68,204 +361,220 @@ namespace net
 		return pCurSession->peer_info();
 	}
 
-	uint16_t SeesionManager::_connect(const char* pIpAddr, uint16_t Port)
-	{
-		sockaddr_in* pSockaddrin = (sockaddr_in*)g_pPeerManager->allocate_sockaddr();
-		pSockaddrin->sin_family = AF_INET;
-		inet_pton(AF_INET, pIpAddr, &pSockaddrin->sin_addr);		//设定新连接的IP
-		pSockaddrin->sin_port = htons(Port);						//设定新连接的端口
-		sockaddr* pSockaddr = (sockaddr*)pSockaddrin;
-		//获取SessionId
-		uint16_t SessionId = g_pPeerManager->connect_peer(pSockaddr);
-		//未能分配可用Session
-		if (ERROR_SESSION_ID == SessionId)
-		{
-			g_pPeerManager->release_sockaddr(pSockaddr);
-			return ERROR_SESSION_ID;
-		}
-		//建立映射失败
-		new_session(SessionId, pSockaddr);
-		return SessionId;
-	}
-
-	uint16_t SeesionManager::_connect6(const char* pIpAddr, uint16_t Port)
-	{
-		sockaddr_in6* pSockaddrin6 = (sockaddr_in6*)g_pPeerManager->allocate_sockaddr();
-		pSockaddrin6->sin6_family = AF_INET6;
-		inet_pton(AF_INET6, pIpAddr, &pSockaddrin6->sin6_addr);		//设定新连接的IP
-		pSockaddrin6->sin6_port = htons(Port);						//设定新连接的端口
-		sockaddr* pSockaddr = (sockaddr*)pSockaddrin6;
-		//获取SessionId
-		uint16_t SessionId = g_pPeerManager->connect_peer(pSockaddr);
-		//未能分配可用Session
-		if (ERROR_SESSION_ID == SessionId)
-		{
-			g_pPeerManager->release_sockaddr(pSockaddr);
-			return ERROR_SESSION_ID;
-		}
-		//建立映射失败
-		new_session(SessionId, pSockaddr);
-		return SessionId;
-	}
-
-	uint16_t SeesionManager::connect(const char* pIpAddr, uint16_t Port)
+	uint16_t SeesionManager::connect_tracker(const char* pIPAddress, uint16_t Port)
 	{
 		//IPv6未完成
-		uint16_t SessionId = _connect(pIpAddr, Port);
+		uint16_t SessionId = _connect(pIPAddress, Port);
 		//IPv6未完成
 		//已达到最大连接数
 		if (ERROR_SESSION_ID == SessionId)
 		{
 			return ERROR_SESSION_ID;
 		}
-		if (false == g_pTimer->add_timer(PING_RTT, std::bind(&SeesionManager::try_connect,this, SessionId)))
+		if (false == g_pTimer->add_timer(PING_RTT, std::bind(try_connect_tracker,SessionId)))
 		{
-			LOG_ERROR << "Connect peer timer create fail...";
+			LOG_ERROR << "Fail to create connect tracker timer...";
 		}
 		return SessionId;
 	}
 
-	void SeesionManager::ping(const char* pIpAddr, uint16_t Port)
+	void SeesionManager::ping_tracker(const char* pIPAddress, uint16_t Port)
 	{
-		uint16_t SessionId = _connect(pIpAddr, Port);
+		uint16_t SessionId = _connect(pIPAddress, Port);
 		//已达到最大连接数
 		if (ERROR_SESSION_ID == SessionId)
 		{
 			return;
 		}
-		if (false == g_pTimer->add_timer(PING_CLOCK, std::bind(&SeesionManager::try_ping_probe,this, SessionId)))
+		if (false == g_pTimer->add_timer(PING_CLOCK, std::bind(try_ping_probe_tracker,SessionId)))
 		{
 			LOG_ERROR << "Ping peer timer create fail...";
 		}
 	}
 
-	void SeesionManager::nat_probe(const char* pIpAddr, uint16_t Port)
+	void SeesionManager::nat_probe_tracker(const char* pIPAddress, uint16_t Port)
 	{
-		uint16_t SessionId = _connect(pIpAddr, Port);
+		uint16_t SessionId = _connect(pIPAddress, Port);
 		//已达到最大连接数
 		if (ERROR_SESSION_ID == SessionId)
 		{
 			return;
 		}
-		if (false == g_pTimer->add_timer(PING_RTT, std::bind(&SeesionManager::try_nat_probe,this, SessionId)))
+		if (false == g_pTimer->add_timer(PING_RTT, std::bind(try_nat_probe_tracker,SessionId)))
 		{
 			LOG_ERROR << "Nat probe timer create fail...";
 		}
 	}
 
+	void SeesionManager::connect_peer(base::SHA1 CID, uint16_t RelaySessionId, sockaddr* pSockaddr)
+	{
+		uint16_t SessionId=g_pPeerManager->session_id(pSockaddr);
+		//当前Session已经连接或者输入的sockaddr有问题
+		if (0 != SessionId)
+		{
+			return;
+		}
+		SessionId = g_pPeerManager->connect_peer(pSockaddr);
+		//未能分配可用Session
+		if (ERROR_SESSION_ID == SessionId)
+		{
+			g_pPeerManager->release_sockaddr(pSockaddr);
+			return;
+		}
+		//建立映射失败
+		if (false == new_session(SessionId, pSockaddr))
+		{
+			return;
+		}
+		if (false == g_pTimer->add_timer(PING_RTT, std::bind(first_try_connect_peer, CID,SessionId, RelaySessionId)))
+		{
+			LOG_ERROR << "Fail to create connect peer timer...";
+		}
+	}
+
+	void SeesionManager::connect_peer(base::SHA1 CID, sockaddr* pSockaddr)
+	{
+		uint16_t SessionId = g_pPeerManager->session_id(pSockaddr);
+		//当前Session已经连接或者输入的sockaddr有问题
+		if (0 != SessionId)
+		{
+			return;
+		}
+		SessionId = g_pPeerManager->connect_peer(pSockaddr);
+		//未能分配可用Session
+		if (ERROR_SESSION_ID == SessionId)
+		{
+			g_pPeerManager->release_sockaddr(pSockaddr);
+			return;
+		}
+		//建立映射失败
+		if (false == new_session(SessionId, pSockaddr))
+		{
+			return;
+		}
+		if (false == g_pTimer->add_timer(PING_RTT, std::bind(try_connect_peer_once, CID, SessionId)))
+		{
+			LOG_ERROR << "Fail to create connect tracker timer...";
+		}
+	}
+
+	void SeesionManager::ping_peer(sockaddr* pSockaddr)
+	{
+		uint16_t SessionId = g_pPeerManager->session_id(pSockaddr);
+		//当前Session已经连接或者输入的sockaddr有问题
+		if (0 != SessionId)
+		{
+			return;
+		}
+		SessionId = g_pPeerManager->connect_peer(pSockaddr);
+		//未能分配可用Session
+		if (ERROR_SESSION_ID == SessionId)
+		{
+			g_pPeerManager->release_sockaddr(pSockaddr);
+			return;
+		}
+		//建立映射失败
+		if (false == new_session(SessionId, pSockaddr))
+		{
+			return;
+		}
+		if (false == g_pTimer->add_timer(3*PING_RTT, std::bind(try_ping_peer_once,SessionId)))
+		{
+			LOG_ERROR << "Fail to create connect tracker timer...";
+		}
+	}
+
 	void SeesionManager::disconnect(uint16_t SessionId)
 	{
+		
 		//终止Sender内的session
-		sockaddr* pSockaddr = delete_session(SessionId);
+		sockaddr* pSockaddr = _delete_session(SessionId);
 		//回收sockaddr
 		if (nullptr != pSockaddr)
 		{
+			//LOG_ERROR << "DISCONNECT " << SessionId;
+			//直接断开sockaddr*->SessionId的映射
 			g_pPeerManager->disconnect_peer(pSockaddr);
+
+			//当前在定时器内部被调用
+			if (false == g_pTimer->add_timer(20*1000, std::bind(recycle_session,SessionId)))
+			{
+				LOG_ERROR << "Recycle Session ID = "<< SessionId<<" timer create fail...";
+			}
 			//on_disconnect(SessionId);
 		}
 	}
 	
-	//定时器任务
-	bool SeesionManager::try_connect(uint16_t SessionId)
+	void SeesionManager::disconnect_in_timer(uint16_t SessionId)
 	{
-		static uint16_t TriggerTimes = 0;
-		//连接服务器超时
-		if (++TriggerTimes >= CONNECT_TIMEOUT_COUNT)
+		//终止Sender内的session
+		sockaddr* pSockaddr = _delete_session(SessionId);
+		//回收sockaddr
+		if (nullptr != pSockaddr)
 		{
-			LOG_DEBUG << "fail to connect";
-			disconnect(SessionId);
-			return true;
+			//LOG_ERROR << "DISCONNECT IN TIMER" << SessionId;
+			//直接断开sockaddr*->SessionId的映射
+			g_pPeerManager->disconnect_peer(pSockaddr);
+
+			//当前在定时器内部被调用
+			if (false == g_pTimer->add_timer_lockless(20 * 1000, std::bind(recycle_session, SessionId)))
+			{
+				LOG_ERROR << "Recycle Session ID = " << SessionId << " timer create fail...";
+			}
+			//g_pPeerManager->recycle_session_id(SessionId);
+			//on_disconnect(SessionId);
 		}
-		net::Session* pCurSession = session(SessionId);
-		if (nullptr == pCurSession)
-		{
-			return true;
-		}
-		char pMessage[2];
-		//如果之前建立了连接，对端可能还保持着连接信息，让它先断开
-		if (1 == TriggerTimes)
-		{
-			create_header(pMessage, PROTOCOL_BASE_DISCONNECT);
-			pCurSession->send(pMessage, BASE_HEADER_LEN);
-		}
-		SessionStatus CurStatus = pCurSession->status();
-		//已连接或者连接失败，结束定时器
-		if (SessionStatus::STATUS_CONNECT_COMPLETE == CurStatus ||
-			SessionStatus::STATUS_NULL == CurStatus)
-		{
-			return true;
-		}
-		//当前未ping成功
-		if (SessionStatus::STATUS_DISCONNECT == CurStatus)
-		{
-			create_header(pMessage, PROTOCOL_BASE_PING_REQ);
-		}
-		else
-		{
-			create_header(pMessage, PROTOCOL_BASE_CONNECT_REQ);
-		}
-		pCurSession->send(pMessage, BASE_HEADER_LEN);
-		return false;
 	}
 
-	bool SeesionManager::try_nat_probe(uint16_t SessionId)
+	uint16_t SeesionManager::_connect(const char* pIPAddress, uint16_t Port)
 	{
-		static uint16_t TriggerTimes = 0;
-		net::Session* pCurSession = session(SessionId);
-		if (nullptr == pCurSession)
+		sockaddr* pSockaddr = g_pPeerManager->get_sockaddr(pIPAddress, Port);
+		//获取SessionId
+		uint16_t SessionId = g_pPeerManager->connect_peer(pSockaddr);
+		//未能分配可用Session
+		if (ERROR_SESSION_ID == SessionId)
 		{
-			return true;
+			g_pPeerManager->release_sockaddr(pSockaddr);
+			return ERROR_SESSION_ID;
 		}
-		//已经判明NAT类型
-		if (g_pHostNatType->get_nat_type() != NAT_TYPE::NAT_TYPE_NULL)
+		//建立映射失败
+		if (false == new_session(SessionId, pSockaddr))
 		{
-			//如果当前状态下连接未建立，则断开连接
-			if (SessionStatus::STATUS_DISCONNECT == pCurSession->status())
-			{
-				disconnect(SessionId);
-			}
-			return true;
+			return ERROR_SESSION_ID;
 		}
-		if (++TriggerTimes >= NAT_PROBE_TIMEOUT_COUNT)
-		{
-			//如果当前状态下连接未建立，则断开连接
-			if (SessionStatus::STATUS_DISCONNECT == pCurSession->status())
-			{
-				disconnect(SessionId);
-			}
-			//超时，可能自身NAT类型为C-，也可能是对端节点的问题
-			LOG_TRACE << "NAT = C-";
-			g_pHostNatType->set_nat_type(NAT_TYPE::NAT_TYPE_C_MINUS);
-			return true;
-		}
-		char pMessage[2];
-		create_header(pMessage, PROTOCOL_BASE_NAT_TYPE_PROBE_REQ);
-		pCurSession->send(pMessage, BASE_HEADER_LEN);
-		return false;
+		return SessionId;
 	}
 
-	bool SeesionManager::try_ping_probe(uint16_t SessionId)
+	uint16_t SeesionManager::_connect6(const char* pIPAddress, uint16_t Port)
 	{
-		static uint16_t TriggerTimes = 0;
-		if (TriggerTimes == PING_TIMEOUT_COUNT)
+		sockaddr* pSockaddr = g_pPeerManager->get_sockaddr6(pIPAddress, Port);
+		//获取SessionId
+		uint16_t SessionId = g_pPeerManager->connect_peer(pSockaddr);
+		//未能分配可用Session
+		if (ERROR_SESSION_ID == SessionId)
 		{
-			return true;
+			g_pPeerManager->release_sockaddr(pSockaddr);
+			return ERROR_SESSION_ID;
 		}
-		net::Session* pCurSession = session(SessionId);
-		if (nullptr == pCurSession)
+		//建立映射失败
+		if (false == new_session(SessionId, pSockaddr))
 		{
-			return true;
+			return ERROR_SESSION_ID;
 		}
-		SessionStatus CurStatus = pCurSession->status();
-		if (CurStatus == SessionStatus::STATUS_PING_COMPLETE ||
-			CurStatus == SessionStatus::STATUS_CONNECT_COMPLETE)
-		{
-			return true;
-		}
-		char pMessage[2];
-		create_header(pMessage, PROTOCOL_BASE_PING_REQ);
-		pCurSession->send(pMessage, BASE_HEADER_LEN);
-		return false;
+		return SessionId;
 	}
-	//定时器任务
+	
+	sockaddr* SeesionManager::_delete_session(uint16_t SessionId)
+	{
+		if (nullptr == m_SessionArr[SessionId])
+		{
+			return nullptr;
+		}
+		std::lock_guard<std::mutex> Lock(m_SessionMutex);
+		m_SessionPool.release(m_SessionArr[SessionId]);
+		sockaddr* pTemp = m_SessionArr[SessionId]->reset();
+		m_SessionArr[SessionId] = nullptr;
+		return pTemp;
+	}
+
 }

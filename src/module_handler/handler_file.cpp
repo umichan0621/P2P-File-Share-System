@@ -43,17 +43,17 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 
 	int8_t HandlerFile::handle_file_fragment_req(uint16_t& SessionId, char* pMessage, uint16_t& Len)
 	{
-		net::Session* pCurSeeion=g_pSessionManager->session(SessionId);
-		if (nullptr == pCurSeeion)
+		net::Session* pCurSession =g_pSessionManager->session(SessionId);
+		if (nullptr == pCurSession)
 		{
 			return DO_NOTHING;
 		}
 		//处理其他节点发送的文件Fragment
 		//LOG_ERROR << "FILE REQ";
-		file::SHA1 SHA1Struct;
+		base::SHA1 SHA1Struct;
 		memcpy(&SHA1Struct, &pMessage[2], 20);
 		std::string strSHA1;
-		file::sha1_value(SHA1Struct, strSHA1);
+		base::sha1_value(SHA1Struct, strSHA1);
 		uint64_t FragmentStart;
 		memcpy(&FragmentStart, &pMessage[22], 8);
 		LOG_ERROR << strSHA1;
@@ -75,13 +75,10 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 		LOG_ERROR << "READ " << FragmentLen;
 		create_header(pMessage, PROTOCOL_FILE_FRAGMENT_ACK);
 
-		pMessage -= 2;
-		uint16_t MessageLen = FragmentLen + 30;
-		memcpy(pMessage, &MessageLen, 2);
 		std::vector<const char*> VecMessage = { pMessage ,pBuf };
-		std::vector<uint16_t> VecMessageLen = { 32,(uint16_t)FragmentLen };
+		std::vector<uint16_t> VecMessageLen = { 30,(uint16_t)FragmentLen };
 
-		pCurSeeion->send_reliable(VecMessage, VecMessageLen);
+		pCurSession->send_reliable(VecMessage, VecMessageLen);
 		////处理Fragment请求
 
 		return DO_NOTHING;
@@ -91,10 +88,10 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 	{
 		LOG_ERROR << "ACK Len = "<< Len;
 		//获取当前Fragment数据的信息
-		file::SHA1 SHA1Struct;
+		base::SHA1 SHA1Struct;
 		memcpy(&SHA1Struct, &pMessage[2], 20);
 		std::string strSHA1;
-		file::sha1_value(SHA1Struct, strSHA1);
+		base::sha1_value(SHA1Struct, strSHA1);
 		uint64_t FragmentStart;
 		memcpy(&FragmentStart, &pMessage[22], 8);
 		file::FileCtrl FileCtrl;

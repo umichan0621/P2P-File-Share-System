@@ -42,7 +42,7 @@ constexpr uint16_t	MAX_CONNECTION_NUM = 1024;
 constexpr int32_t	MIN_MTU = 1400;
 constexpr int32_t	DEFAULT_MTU = 1400;
 constexpr int32_t	ADDR_LEN_IPV6 = 28;				//IPv6 Sockaddr数据结构长度
-constexpr uint32_t	HEARTBEAT_CLOCK = 1000 * 10;	//心跳包频率
+constexpr uint32_t	HEARTBEAT_CLOCK = 10*1000 ;	//心跳包频率
 constexpr uint32_t	PING_CLOCK = 500;				//ping的频率
 constexpr uint32_t	PING_TIMEOUT_COUNT = 10;		//ping的次数
 
@@ -81,9 +81,9 @@ namespace base
 		const string& path_download() {return m_DownloadPath;}
 		const string& path_share() { return m_SharePath; }
 	private:
-		uint16_t				m_Port;
-		uint16_t				m_Port6;
-		uint16_t				m_MaxConnectionNum;
+		uint16_t				m_Port = 0;
+		uint16_t				m_Port6 = 0;
+		uint16_t				m_MaxConnectionNum = 0;
 		std::atomic<uint64_t>	m_MaxUpLoad;
 		std::atomic<uint64_t>	m_MaxDownLoad;
 		string					m_DownloadPath;
