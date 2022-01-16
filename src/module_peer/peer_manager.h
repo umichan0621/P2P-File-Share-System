@@ -28,6 +28,8 @@
 constexpr uint16_t	ERROR_SESSION_ID = 0xffff;
 constexpr uint8_t	KSOCKADDR_LEN_V6 = 28;
 
+typedef sockaddr_in6 PeerAddress;	//同时适用IPv4和IPv6的数据结构
+
 namespace peer
 {
 	enum PeerStatus
@@ -46,24 +48,25 @@ namespace peer
 	private:
 		struct Peer
 		{
-			sockaddr*	PeerAddress;	//存储Peer的地址
-			uint8_t		Count;			//记录同时使用当前Peer的数量
-			uint8_t	    Status;			//Peer的状态
+			PeerAddress		PeerAddr;	//存储Peer的地址
+			uint8_t			Count;			//记录同时使用当前Peer的数量
+			uint8_t			Status;			//Peer的状态
 			Peer() :
-				PeerAddress(nullptr),
+				PeerAddr({ 0 }),
 				Count(0),
 				Status(BAD) {}
-			Peer(sockaddr* pSockaddr) :
-				PeerAddress(pSockaddr),
+			Peer(const PeerAddress& Sockaddr) :
+				PeerAddr(Sockaddr),
 				Count(1),
 				Status(QUESTIONALBE) {}
 		};
 		struct HashFunc					//自定义sockaddr数据结构的哈希函数
 		{
-			size_t operator()(const sockaddr* pSockaddr) const
+			size_t operator()(const PeerAddress& PeerAddr) const
 			{
+				sockaddr* pSockaddr = (sockaddr*)&PeerAddr;
 				size_t Res = 0xdeadbeef;
-				for (uint16_t i = 0; i < 7; ++i)
+				for (uint16_t i = 0; i < 14; ++i)
 				{
 					size_t Temp = pSockaddr->sa_data[i];
 					Res ^= Temp << i;
@@ -73,21 +76,21 @@ namespace peer
 		};
 		struct EqualFunc				//自定义sockaddr数据结构的相等条件
 		{
-			bool operator()(const sockaddr* pSockaddr1, const sockaddr* pSockaddr2) const
+			bool operator()(const PeerAddress& PeerAddr1, const PeerAddress& PeerAddr2) const
 			{
+				sockaddr* pSockaddr1 = (sockaddr*)&PeerAddr1;
+				sockaddr* pSockaddr2 = (sockaddr*)&PeerAddr2;
 				for (uint16_t i = 0; i < 14; ++i)
 				{
 					if (pSockaddr1->sa_data[i] != pSockaddr2->sa_data[i])
 						return false;
 				}
-				return pSockaddr1->sa_family == pSockaddr2->sa_family;
+				return pSockaddr1->sa_family== pSockaddr2->sa_family;
 			}
 		};
-		typedef std::unordered_map<sockaddr*, uint16_t, HashFunc, EqualFunc>	SessionIdMap;
-		typedef std::unordered_map<sockaddr*, int32_t, HashFunc, EqualFunc>		PeerIdMap;
-		typedef std::unordered_map<int32_t, Peer>								PeerMap;
-		//适配IPv4和IPv6
-		typedef base::ObjectPool<sockaddr_in6>									SockaddrPool;
+		typedef std::unordered_map<PeerAddress, uint16_t, HashFunc, EqualFunc>		SessionIdMap;
+		typedef std::unordered_map<PeerAddress, int32_t, HashFunc, EqualFunc>		PeerIdMap;
+		typedef std::unordered_map<int32_t, Peer>									PeerMap;
 	public:
 		PeerManager();
 		~PeerManager();
@@ -99,10 +102,10 @@ namespace peer
 		//返回值<0表示当前Peer已加入黑名单
 		//返回值==0表示当前路由表可记录Peer已达上限
 		//每次调用引用+1
-		int32_t peer_id(sockaddr* pSockaddr);
+		int32_t peer_id(const PeerAddress& PeerAddr);
 
 		//返回Peer的引用
-		sockaddr* peer(int32_t PeerId, uint8_t& Status);
+		bool peer(int32_t PeerId, PeerAddress& PeerAddr, uint8_t& Status);
 
 		uint8_t peer_status(int32_t PeerId);
 
@@ -116,32 +119,27 @@ namespace peer
 		void free_peer(const std::vector<int32_t>& ArrPeerId);
 
 		//将一个Peer加入黑名单，路由表不再记录它的信息
-		void ban_peer(sockaddr* pSockaddr);
+		void ban_peer(const PeerAddress& PeerAddr);
 
-		sockaddr* get_sockaddr(const char* pIPAddressess, uint16_t Port) const;
+		void get_sockaddr(PeerAddress& PeerAddr,const char* pIPAddressess, uint16_t Port) const;
 
-		sockaddr* get_sockaddr6(const char* pIPAddressess, uint16_t Port) const;
+		void get_sockaddr6(PeerAddress& PeerAddr, const char* pIPAddressess, uint16_t Port) const;
 
 		//根据输入的Sockaddr得到一个已连接的SessionId
 		//返回0表示当前sockaddr未登记
 		//返回0xffff表示sockaddr有误
-		uint16_t session_id(sockaddr* pSockaddr);
+		uint16_t session_id(const PeerAddress& PeerAddr);
 
 		//成功返回分配的SessionId，失败返回0xffff
 		//连接成功后Peer状态为Good
-		uint16_t connect_peer(sockaddr* pSockaddr);
+		uint16_t connect_peer(const PeerAddress& PeerAddr);
 
 		//断开连接，计数-1，状态变为Questionable
-		void disconnect_peer(sockaddr* pSockaddr);
+		void disconnect_peer(const PeerAddress& PeerAddr);
 
 		//回收之前分配出去的SessionId
 		//应该由定时器调用，延时回收
 		void recycle_session(uint16_t SessionId);
-
-		//使用内置的对象池获取一个sockaddr
-		sockaddr* allocate_sockaddr();
-
-		void release_sockaddr(sockaddr* pSockaddr);
 
 		//获取一个还没有查询过的Peer
 		uint16_t search_pop();
@@ -155,7 +153,7 @@ namespace peer
 		//加入一个没有连接的Peer
 		void connect_push(int32_t PeerId);
 
-		static bool info(sockaddr* pSockaddr, std::string& strIP, uint16_t& Port);
+		static bool info(const PeerAddress& PeerAddr, std::string& strIP, uint16_t& Port);
 	private:
 
 		//获取一个没有使用的SessionId
@@ -164,7 +162,6 @@ namespace peer
 		//随机生成一个没有使用的PeerId
 		int32_t _peer_id();
 	private:
-		SockaddrPool				m_SockaddrPool;		//用于分配和回收Sockaddr*
 		std::mutex					m_PeerManagerMutex;
 	private://Peer相关
 		int32_t						m_PeerCapacity;		//Peer上限

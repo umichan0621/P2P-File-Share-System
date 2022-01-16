@@ -30,10 +30,10 @@ namespace net
 		void set_handler(handler::HandlerManager* pHandler);
 	private:
 		//接收来自其他节点的连接请求
-		void on_accept(uint16_t SessionId, sockaddr* pSockaddr) override;
+		void on_accept(uint16_t SessionId, const PeerAddress& PeerAddr) override;
 		//用于处理所有
 		//内部判断是否接受连接，如果是询问请求或者非法连接则返回false
-		bool on_gateway(sockaddr* pSockaddr, char* pMessage, uint16_t Len) override;
+		bool on_gateway(const PeerAddress& PeerAddr, char* pMessage, uint16_t Len) override;
 		void on_recv(uint16_t SessionId, char* pMessage, uint16_t Len) override;
 		void on_disconnect(uint16_t SessionId) override;
 	private:

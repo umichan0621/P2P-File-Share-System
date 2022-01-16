@@ -4,15 +4,13 @@
 #include <base/config.hpp>
 #include <base/buffer_pool.hpp>
 #include <base/logger/logger.h>
+
 #pragma warning(disable:4244)
 
 namespace net
 {
 	IoData::IoData() :
-		IoType(IO_OPERATION_TYPE::NULL_POSTED),
-
-		pSockaddr((sockaddr*)(new sockaddr_in6()))
-		//pSockaddr(new sockaddr())
+		IoType(IO_OPERATION_TYPE::NULL_POSTED)
 	{
 		memset(&OverLapped, 0, sizeof(OverLapped));
 		WsaBuf.buf = g_pBufferPoolMgr->allocate();
@@ -21,10 +19,6 @@ namespace net
 
 	IoData::~IoData()
 	{
-		if (nullptr != pSockaddr)
-		{
-			delete pSockaddr;
-		}
 		if (WsaBuf.buf != nullptr)
 		{
 			g_pBufferPoolMgr->release(WsaBuf.buf);
@@ -122,7 +116,8 @@ namespace net
 			pIoData = m_IoDataPool.allocate();
 			//IoData，recv的只用来recv，只在这里初始化
 			pIoData->IoType = IO_OPERATION_TYPE::RECV_POSTED;
-			pIoData->pSockaddr->sa_family = AF_INET;
+			sockaddr* pSockaddr = (sockaddr*)&pIoData->PeerAddr;
+			pSockaddr->sa_family = AF_INET;
 			_post_recv(pIoData);
 		}
 		for (uint16_t i = 0; i < m_ThreadNum; ++i)
@@ -130,7 +125,8 @@ namespace net
 			pIoData = m_IoDataPool.allocate();
 			//IoData，recv的只用来recv，只在这里初始化
 			pIoData->IoType = IO_OPERATION_TYPE::RECV_POSTED;
-			pIoData->pSockaddr->sa_family = AF_INET6;
+			sockaddr* pSockaddr = (sockaddr*)&pIoData->PeerAddr;
+			pSockaddr->sa_family = AF_INET6;
 			_post_recv(pIoData);
 		}
 	}
@@ -250,10 +246,11 @@ namespace net
 	void NetReceiverWin::_post_recv(IoData* pIoData)
 	{
 		DWORD Flags = 0, RecvLen = 0;
-		SOCKET RecvFd = (pIoData->pSockaddr->sa_family == AF_INET ? m_ListenFd : m_ListenFd6);
+		sockaddr* pSockaddr = (sockaddr*)&pIoData->PeerAddr;
+		SOCKET RecvFd = (pSockaddr->sa_family == AF_INET ? m_ListenFd : m_ListenFd6);
 		if (SOCKET_ERROR == WSARecvFrom(
 			RecvFd, &(pIoData->WsaBuf), 1, &RecvLen, &Flags,
-			pIoData->pSockaddr, &m_AddrLen6, &pIoData->OverLapped, NULL))
+			pSockaddr, &m_AddrLen6, &pIoData->OverLapped, NULL))
 		{
 			//if (ERROR_IO_PENDING != WSAGetLastError())
 			//{
@@ -267,13 +264,13 @@ namespace net
 		//::WSASendTo()
 	}
 
-	void NetReceiverWin::_gateway(sockaddr* pSockaddr, char* pMessage, uint16_t Len)
+	void NetReceiverWin::_gateway(const PeerAddress PeerAddr, char* pMessage, uint16_t Len)
 	{
 		//触发gateway的回调，返回true才允许建立连接
-		if (true == on_gateway(pSockaddr, pMessage, Len))
+		if (true == on_gateway(PeerAddr, pMessage, Len))
 		{
-			uint16_t SessionId = g_pPeerManager->connect_peer(pSockaddr);
-			on_accept(SessionId, pSockaddr);
+			uint16_t SessionId = g_pPeerManager->connect_peer(PeerAddr);
+			on_accept(SessionId, PeerAddr);
 		}
 		g_pBufferPoolMgr->release(pMessage);
 	}
@@ -307,12 +304,11 @@ namespace net
 			if (false == GetQueuedCompletionStatus(m_Iocp, &Len, (PULONG_PTR)&pIoData, &pOverLapped, INFINITE))
 			{
 				//LOG_ERROR << "GetQueuedCompletionStatus failed with error:" << GetLastError();
-				//delete pIoData;
 				pIoData = m_IoDataPool.allocate();
-				//if(nullptr!= pIoData)
 				pIoData->IoType = IO_OPERATION_TYPE::RECV_POSTED;
-				pIoData->pSockaddr->sa_family = AF_INET;
-					_post_recv(pIoData);
+				sockaddr* pSockaddr = (sockaddr*)&pIoData->PeerAddr;
+				pSockaddr->sa_family = AF_INET;
+				_post_recv(pIoData);
 			}
 			pIoData = CONTAINING_RECORD(pOverLapped, IoData, OverLapped);
 			//为空指针，表示停止循环并退出
@@ -325,7 +321,8 @@ namespace net
 			if (pIoData->IoType == IO_OPERATION_TYPE::RECV_POSTED)
 			{
 				//收到消息，处理
-				uint16_t SessionId = g_pPeerManager->session_id(pIoData->pSockaddr);
+				uint16_t SessionId = g_pPeerManager->session_id(pIoData->PeerAddr);
+
 				if (ERROR_SESSION_ID != SessionId)
 				{
 					char* pMessage = pIoData->WsaBuf.buf;
@@ -333,11 +330,8 @@ namespace net
 					//新的连接
 					if (0 == SessionId)
 					{
-						sockaddr* pNewSockAddr = pIoData->pSockaddr;
-						pIoData->pSockaddr = g_pPeerManager->allocate_sockaddr();
-						pIoData->pSockaddr->sa_family = pNewSockAddr->sa_family;
 						m_pThreadPool->add_task(std::bind(&NetReceiverWin::_gateway, 
-							this, pNewSockAddr, pMessage, static_cast<uint16_t>(Len)));
+							this, pIoData->PeerAddr, pMessage, static_cast<uint16_t>(Len)));
 					}
 					//触发recv回调
 					else

@@ -8,9 +8,8 @@
 #include <sys/socket.h>
 #include <base/thread_pool.h>
 #include <base/buffer_pool.hpp>
-#include <base/object_pool.hpp>
 #include <base/config.hpp>
-
+#include <module_peer/peer_manager.h>
 #define SOCKET int32_t
 
 namespace net
@@ -19,7 +18,6 @@ namespace net
 	{
 		typedef base::ThreadPool				ThreadPool;
 		typedef base::BufferPool				BufferPool;
-		typedef base::ObjectPool<sockaddr>		SockaddrPool;
 	public:
 		NetReceiverLinux();
 		~NetReceiverLinux();
@@ -29,8 +27,8 @@ namespace net
 		//监听端口，同时循环接受消息，初始化资源
 		void listen(ThreadPool* pThreadPool);
 	private:
-		virtual void on_accept(uint16_t SessionId, sockaddr* pSockaddr) = 0;
-		virtual bool on_gateway(sockaddr* pSockaddr, char* pMessage, uint16_t Len) = 0;
+		virtual void on_accept(uint16_t SessionId, const PeerAddress& PeerAddr) = 0;
+		virtual bool on_gateway(const PeerAddress& PeerAddr, char* pMessage, uint16_t Len) = 0;
 		virtual void on_disconnect(uint16_t SessionId) = 0;
 		virtual void on_recv(uint16_t SessionId, char* pMessage, uint16_t Len) = 0;
 	private:
@@ -39,7 +37,7 @@ namespace net
 		bool _init_socket_nat(uint16_t PortNAT);
 		bool _init_epoll(bool bIPv6 = false);
 		void _reactor();
-		void _gateway(sockaddr* pSockaddr, char* pMessage, uint16_t Len);
+		void _gateway(const PeerAddress PeerAddr, char* pMessage, uint16_t Len);
 		void _recv(uint16_t SessionId, char* pMessage, uint16_t Len);
 	protected:
 		//Socket相关
@@ -53,6 +51,5 @@ namespace net
 		//资源分配相关
 		ThreadPool*			m_pThreadPool;				//工作线程池
 		BufferPool			m_BufPool;
-		SockaddrPool		m_SockaddrPool;				//sockaddr对象池
 	};
 }

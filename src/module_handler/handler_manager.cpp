@@ -64,7 +64,7 @@ namespace handler
 		g_pTimer->add_timer(HEARTBEAT_CLOCK, std::bind(heartbeat_examine, SessionId));
 		std::string strIpAddr;
 		uint16_t Port;
-		pCurSession->get_session_info(strIpAddr, Port);
+		pCurSession->info(strIpAddr, Port);
 		LOG_TRACE << "New Connection, Session ID = " << SessionId << ", IP:Port = " << strIpAddr << ":" << Port;
 		return true;
 	}

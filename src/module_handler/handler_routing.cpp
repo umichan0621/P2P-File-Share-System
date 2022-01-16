@@ -109,8 +109,9 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 						{
 							continue;
 						}
-						sockaddr_in6* pPartnerSockaddr6 = (sockaddr_in6*)pPartnerSession->get_sockaddr();
-						memcpy(&pSendBuf[Pos], pPartnerSockaddr6, KSOCKADDR_LEN_V6);
+						PeerAddress PartnerAddr = { 0 };
+						pPartnerSession->get_peer_addr(PartnerAddr);
+						memcpy(&pSendBuf[Pos], &PartnerAddr, KSOCKADDR_LEN_V6);
 						Pos += KSOCKADDR_LEN_V6;
 						++Count;
 						//10个一组，发送Partner命中消息
@@ -132,7 +133,9 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 						std::string strIP, strCID;
 						uint16_t Port;
 						base::sha1_value(pKey, strCID);
-						bool res = peer::PeerManager::info(pReqSession->get_sockaddr(), strIP, Port);
+						PeerAddress ReqAddr = { 0 };
+						pReqSession->get_peer_addr(ReqAddr);
+						bool res = peer::PeerManager::info(ReqAddr, strIP, Port);
 						if (false != res)
 						{
 							LOG_TRACE << "Add CID = " << strCID << ", Peer:" << strIP << ":" << Port << " to Partner Table";
@@ -165,11 +168,15 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 							continue;
 						}
 						uint8_t PeerStatus;
-						sockaddr* pSockaddr = g_pPeerManager->peer(SearchPeerID, PeerStatus);
-						memcpy(&pSendBuf[Pos], (sockaddr_in6*)pSockaddr, KSOCKADDR_LEN_V6);
-						Pos += KSOCKADDR_LEN_V6;
-						memcpy(&pSendBuf[Pos], &PeerStatus, 1);
-						++Pos;
+						PeerAddress SearchAddr = { 0 };
+						bool bRes= g_pPeerManager->peer(SearchPeerID, SearchAddr, PeerStatus);
+						if (true == bRes)
+						{
+							memcpy(&pSendBuf[Pos], &SearchAddr, KSOCKADDR_LEN_V6);
+							Pos += KSOCKADDR_LEN_V6;
+							memcpy(&pSendBuf[Pos], &PeerStatus, 1);
+							++Pos;
+						}
 					}
 					pReqSession->send_reliable(pSendBuf, Pos);
 				}
@@ -180,7 +187,9 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 					std::string strIP, strCID;
 					uint16_t Port;
 					base::sha1_value(pKey, strCID);
-					bool res = peer::PeerManager::info(pReqSession->get_sockaddr(), strIP, Port);
+					PeerAddress ReqAddr = { 0 };
+					pReqSession->get_peer_addr(ReqAddr);
+					bool res = peer::PeerManager::info(ReqAddr, strIP, Port);
 					if (false != res)
 					{
 						LOG_TRACE << "Add CID = " << strCID << ", Peer:" << strIP << ":" << Port << " to Routing Table";
@@ -230,17 +239,16 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 		memcpy(&CID, pKey, KLEN_KEY);
 
 		uint16_t Pos = 2 + KLEN_KEY;
-		sockaddr_in6 TargetSockaddr6 = { 0 };
+		PeerAddress TargetPeerAddr = { 0 };
 		uint8_t PeerStatus;
 
 		for (; Pos < Len;)
 		{
-			memcpy(&TargetSockaddr6, &pMessage[Pos], KSOCKADDR_LEN_V6);
+			memcpy(&TargetPeerAddr, &pMessage[Pos], KSOCKADDR_LEN_V6);
 			Pos += KSOCKADDR_LEN_V6;
 			memcpy(&PeerStatus, &pMessage[Pos], 1);
 			++Pos;
-			sockaddr* pTargetSockaddr = (sockaddr*)&TargetSockaddr6;
-			uint16_t TargetSessionId = g_pPeerManager->session_id(pTargetSockaddr);
+			uint16_t TargetSessionId = g_pPeerManager->session_id(TargetPeerAddr);
 			//当前获取的节点已经建立连接，不用再建立连接
 			if (0 != TargetSessionId)
 			{
@@ -253,7 +261,7 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 				}
 #endif
 				//加入路由表
-				int32_t PeerId = g_pPeerManager->peer_id(pTargetSockaddr);
+				int32_t PeerId = g_pPeerManager->peer_id(TargetPeerAddr);
 				if (PeerId >= 0)
 				{
 					peer::Node CurNode(pKey, PeerId);
@@ -265,28 +273,27 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 				//状态为GOOD，如果因为NAT连不上可以借助中间节点连接
 				if (peer::GOOD == PeerStatus)
 				{
-					g_pSessionManager->connect_peer(CID, AckSessionId, pTargetSockaddr);
-					//TEST
-					{
+					g_pSessionManager->connect_peer(CID, AckSessionId, TargetPeerAddr);
+					{//TEST
 						std::string strIP;
 						uint16_t Port;
-						bool res1 = peer::PeerManager::info(pTargetSockaddr, strIP, Port);
+						bool res1 = peer::PeerManager::info(TargetPeerAddr, strIP, Port);
 						if (false != res1)
 						{
 							LOG_TRACE << "Try to connect " << strIP << ":" << Port << " by relay SessionID = " << AckSessionId;
 						}
-					}
-					//TEST
+					}//TEST
+					
 				}
 				//其他状态下，中间节点无法协助连接，只尝试一次
 				else
 				{
-					g_pSessionManager->connect_peer(CID, pTargetSockaddr);
+					g_pSessionManager->connect_peer(CID, TargetPeerAddr);
 					//TEST
 					{
 						std::string strIP;
 						uint16_t Port;
-						bool res = peer::PeerManager::info((sockaddr*)&TargetSockaddr6, strIP, Port);
+						bool res = peer::PeerManager::info(TargetPeerAddr, strIP, Port);
 						if (false != res)
 						{
 							LOG_TRACE << "Try to connect " << strIP << ":" << Port << " once";
@@ -310,7 +317,8 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 		{
 			return DO_NOTHING;
 		}
-
+		PeerAddress AckPeerAddr = { 0 };
+		pAckSession->get_peer_addr(AckPeerAddr);
 		base::SHA1 CID = { 0 };
 		uint16_t Pos = 2;
 		for (; Pos < Len;)
@@ -328,7 +336,7 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 					std::string strIP,strCID;
 					base::sha1_value(pKey, strCID);
 					uint16_t Port;
-					bool res = peer::PeerManager::info(pAckSession->get_sockaddr(), strIP, Port);
+					bool res = peer::PeerManager::info(AckPeerAddr, strIP, Port);
 					if (false != res)
 					{
 						LOG_TRACE << "Add CID = " << strCID<<", Peer:"<< strIP << ":" << Port << " to PartnerTable";
@@ -339,7 +347,7 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 			}
 #endif
 			//加入路由表
-			int32_t PeerId = g_pPeerManager->peer_id(pAckSession->get_sockaddr());
+			int32_t PeerId = g_pPeerManager->peer_id(AckPeerAddr);
 			if (PeerId >= 0)
 			{
 				peer::Node CurNode(pKey, PeerId);
@@ -349,7 +357,7 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 					std::string strIP, strCID;
 					base::sha1_value(pKey, strCID);
 					uint16_t Port;
-					bool res = peer::PeerManager::info(pAckSession->get_sockaddr(), strIP, Port);
+					bool res = peer::PeerManager::info(AckPeerAddr, strIP, Port);
 					if (false != res)
 					{
 						LOG_TRACE << "Add CID = " << strCID << ", Peer:" << strIP << ":" << Port << " to RoutingTable";
@@ -369,15 +377,15 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 		memcpy(&CID, pKey, KLEN_KEY);
 
 		uint16_t Pos = 2 + KLEN_KEY;
-		sockaddr_in6 TargetSockaddr6 = { 0 };
+		PeerAddress TargetPeerAddr = { 0 };
+
 
 		for (; Pos < Len;)
 		{
-			memcpy(&TargetSockaddr6, &pMessage[Pos], KSOCKADDR_LEN_V6);
+			memcpy(&TargetPeerAddr, &pMessage[Pos], KSOCKADDR_LEN_V6);
 			Pos += KSOCKADDR_LEN_V6;
 
-			sockaddr* pTargetSockaddr = (sockaddr*)&TargetSockaddr6;
-			uint16_t TargetSessionId = g_pPeerManager->session_id(pTargetSockaddr);
+			uint16_t TargetSessionId = g_pPeerManager->session_id(TargetPeerAddr);
 			//当前获取的节点已经建立连接，不用再建立连接
 			if (0 != TargetSessionId)
 			{
@@ -391,7 +399,7 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 						std::string strIP, strCID;
 						base::sha1_value(pKey, strCID);
 						uint16_t Port;
-						bool res = peer::PeerManager::info(pTargetSockaddr, strIP, Port);
+						bool res = peer::PeerManager::info(TargetPeerAddr, strIP, Port);
 						if (false != res)
 						{
 							LOG_TRACE << "Add CID = " << strCID << ", Peer:" << strIP << ":" << Port << " to PartnerTable";
@@ -402,7 +410,7 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 				}
 #endif
 				//加入路由表
-				int32_t PeerId = g_pPeerManager->peer_id(pTargetSockaddr);
+				int32_t PeerId = g_pPeerManager->peer_id(TargetPeerAddr);
 				if (PeerId >= 0)
 				{
 					peer::Node CurNode(pKey, PeerId);
@@ -412,7 +420,7 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 						std::string strIP, strCID;
 						base::sha1_value(pKey, strCID);
 						uint16_t Port;
-						bool res = peer::PeerManager::info(pTargetSockaddr, strIP, Port);
+						bool res = peer::PeerManager::info(TargetPeerAddr, strIP, Port);
 						if (false != res)
 						{
 							LOG_TRACE << "Add CID = " << strCID << ", Peer:" << strIP << ":" << Port << " to RoutingTable";
@@ -425,12 +433,12 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 			{
 				//状态为GOOD，如果因为NAT连不上可以借助中间节点连接
 
-				g_pSessionManager->connect_peer(CID, SessionId, pTargetSockaddr);
+				g_pSessionManager->connect_peer(CID, SessionId, TargetPeerAddr);
 				//TEST
 				{
 					std::string strIP;
 					uint16_t Port;
-					bool res = peer::PeerManager::info(pTargetSockaddr, strIP, Port);
+					bool res = peer::PeerManager::info(TargetPeerAddr, strIP, Port);
 					if (false != res)
 					{
 						LOG_TRACE << "Try to connect " << strIP << ":" << Port << " By relay node:" << SessionId;

@@ -139,12 +139,17 @@ void AppCtrl::start()
 {
 	int x;
 #ifndef _DEBUG//服务器
-	//const char* p = "127.0.0.1";
-	const char* p = "121.5.179.213";
-	uint16_t Session = g_pSessionManager->connect_tracker(p, 2342);
+	//const char* p = "192.168.50.13";
+	const char* p = "127.0.0.1";
+	//const char* p = "121.5.179.213";
+	uint16_t Session = g_pSessionManager->connect_tracker(p, 42543);
 	std::cin >> x;
 	m_pThreadPool->add_task(std::bind(&AppCtrl::thread_loop_search, this));
+	m_pMoudleGui->show();
+
 #else//客户端
+	//const char* p = "192.168.50.13";
+
 	//const char* p = "127.0.0.1";
 	const char* p = "121.5.179.213";
 	uint16_t Session = g_pSessionManager->connect_tracker(p, 2342);

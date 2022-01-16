@@ -43,24 +43,34 @@ namespace net
 		uint8_t timeout();
 		SessionStatus status();
 		void set_status(SessionStatus Status);
-		sockaddr* get_sockaddr();
-	public://初始化和重置
-		bool init(sockaddr* pSockaddr,SOCKET ListenFd,SOCKET ListenFdNAT);	//初始化session
+		void get_peer_addr(sockaddr_in6& PeerAddr) const;
+
+		//初始化session
+		bool init(const sockaddr_in6 PeerAddr,SOCKET ListenFd,SOCKET ListenFdNAT);	
+		
 		void init_kcp(uint32_t Conv);
-		sockaddr* reset();				//清空session用作回收
-	public://不可靠API
-		void send(const char* pMessage, uint16_t len);		//给Session发送不可靠消息
-		void send_nat(const char* pMessage, uint16_t Len);	//给Session发送不可靠NAT消息
-	public://可靠API
-		void input(char* pMessage, uint16_t Len);			//解析KCP数据并写入Recv缓存
+
+		//给Session发送不可靠消息
+		void send(const char* pMessage, uint16_t len);	
+
+		//给Session发送不可靠NAT消息
+		void send_nat(const char* pMessage, uint16_t Len);	
+
+		//解析KCP数据并写入Recv缓存
+		void input(char* pMessage, uint16_t Len);	
+
 		char* read(uint16_t& Len);
+
 		void read_over();
+
 		//发送可靠消息，连接不断的情况下一定能够收到
 		void send_reliable(const char* pMessage, uint16_t Len);
 
 		//发送几段拼接起来的数据，用于发送长数据
 		void send_reliable(std::vector<const char*>& VecMessage, std::vector <uint16_t>& VecLen);
-		bool get_session_info(std::string& strIpAddr, uint16_t& Port);//获取IP地址和端口
+
+		bool info(std::string& strIpAddr, uint16_t& Port);//获取IP地址和端口
+
 		bool update();
 	public:
 		int32_t peer_id();
@@ -72,6 +82,7 @@ namespace net
 		SOCKET							m_ListenFd;	
 		SOCKET							m_ListenFdNAT;	
 		sockaddr*						m_pSockaddr;
+		sockaddr_in6					m_PeerAddr;
 	private:
 		base::Buffer					m_RecvBuffer;
 	private://KCP相关

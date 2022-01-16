@@ -105,8 +105,6 @@ namespace net
 			LOG_ERROR << "epoll init failed";
 			return false;
 		}
-		//预分配128个sockaddr对象
-		m_SockaddrPool.init(128);
 		return true;
 	}
 
@@ -266,14 +264,14 @@ namespace net
 		m_BufPool.release(pMessage);
 	}
 
-	void NetReceiverLinux::_gateway(sockaddr* pSockaddr, char* pMessage, uint16_t Len)
+	void NetReceiverLinux::_gateway(const PeerAddress PeerAddr, char* pMessage, uint16_t Len)
 	{
 		//返回true表示同意建立连接
-		if (true == on_gateway(pSockaddr,pMessage, Len))
+		if (true == on_gateway(PeerAddr,pMessage, Len))
 		{
 			
-			uint16_t SessionId = g_pPeerManager->connect_peer(pSockaddr);
-			on_accept(SessionId, pSockaddr);
+			uint16_t SessionId = g_pPeerManager->connect_peer(PeerAddr);
+			on_accept(SessionId, PeerAddr);
 		}
 		m_BufPool.release(pMessage);
 	}
@@ -284,6 +282,7 @@ namespace net
 		int32_t SocketFd = SOCKET_ERROR;
 		uint32_t TriggerNum = 0;
 		int64_t RecvLen = -1;
+		PeerAddress PeerAddr = { 0 };
 		for (;; )
 		{
 			//获取已经准备好的描述符事件
@@ -304,25 +303,27 @@ namespace net
 					//IPv4或IPv6监听Socket
 					if (SocketFd == m_ListenFd || SocketFd == m_ListenFd6)
 					{
-						//预分配资源
-						sockaddr* pSockaddr = m_SockaddrPool.allocate();
+						PeerAddr = { 0 };
+						sockaddr* pSockaddr = (sockaddr*)&PeerAddr;
 						char* pBuf = m_BufPool.allocate();
 						RecvLen = ::recvfrom(SocketFd, pBuf, MIN_MTU, 0, pSockaddr, &m_AddrLen6);
 
 						if (RecvLen <= 0)
 							continue;
 						
-						uint16_t SessionId = g_pPeerManager->session_id(pSockaddr);
+						uint16_t SessionId = g_pPeerManager->session_id(PeerAddr);
 						if (ERROR_SESSION_ID == SessionId)
 							continue;
 						//新的连接
 						if (0 == SessionId)
 						{
+							LOG_ERROR << "new";
 							//加入任务队列，内部会回收之前分配的资源
-							m_pThreadPool->add_task(std::bind(&NetReceiverLinux::_gateway, this, pSockaddr, pBuf, static_cast<uint16_t>(RecvLen)));
+							m_pThreadPool->add_task(std::bind(&NetReceiverLinux::_gateway, this, PeerAddr, pBuf, static_cast<uint16_t>(RecvLen)));
 						}
 						else
 						{
+							LOG_ERROR << "recv "<< SessionId;
 							//加入任务队列，内部会回收之前分配的资源
 							m_pThreadPool->add_task(std::bind(&NetReceiverLinux::_recv, this, SessionId, pBuf, static_cast<uint16_t>(RecvLen)));
 						}

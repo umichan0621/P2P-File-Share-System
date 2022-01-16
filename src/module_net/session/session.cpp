@@ -59,18 +59,15 @@ namespace net
 		m_SessionStatus = Status;
 	}
 
-	sockaddr* Session::get_sockaddr()
+	void Session::get_peer_addr(sockaddr_in6& PeerAddr) const
 	{
-		return m_pSockaddr;
+		PeerAddr= m_PeerAddr;
 	}
 
-	bool Session::init(sockaddr* pSockaddr, SOCKET ListenFd, SOCKET ListenFdNAT)
+	bool Session::init(const sockaddr_in6 PeerAddr,  SOCKET ListenFd, SOCKET ListenFdNAT)
 	{
-		if (nullptr == pSockaddr)
-		{
-			return false;
-		}
-		m_pSockaddr = pSockaddr;
+		m_PeerAddr = PeerAddr;
+		m_pSockaddr = (sockaddr*)&m_PeerAddr;
 		//设定当前Session的SocketFd
 		m_ListenFd = ListenFd;
 		//设定NAT的SocketFd
@@ -91,21 +88,6 @@ namespace net
 		m_Kcp->interval = 10;
 		m_Kcp->rx_minrto = 50;
 		m_Kcp->stream = 1;
-	}
-
-	sockaddr* Session::reset()
-	{
-		sockaddr* pTemp = m_pSockaddr;
-		m_ListenFd = 0;
-		m_ListenFdNAT = 0;
-		std::lock_guard<std::mutex> Lock(m_KcpMutex);
-		m_pSockaddr = nullptr;
-		if (nullptr != m_Kcp)
-		{
-			ikcp_release(m_Kcp);
-		}
-		m_Kcp = nullptr;
-		return pTemp;
 	}
 
 	void Session::send(const char* pMessage, uint16_t Len)
@@ -209,7 +191,7 @@ namespace net
 		::ikcp_update(m_Kcp, _clock());
 	}
 
-	bool Session::get_session_info(std::string& strIpAddr, uint16_t& Port)
+	bool Session::info(std::string& strIpAddr, uint16_t& Port)
 	{
 		if (AF_INET == m_pSockaddr->sa_family)//IPV4
 		{
@@ -274,6 +256,6 @@ namespace net
 
 	int32_t Session::peer_id()
 	{
-		return g_pPeerManager->peer_id(m_pSockaddr);
+		return g_pPeerManager->peer_id(m_PeerAddr);
 	}
 }

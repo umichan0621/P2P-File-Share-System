@@ -23,24 +23,23 @@ namespace net
 		m_pNetHandler = pHandler;
 	}
 
-	void NetReceiver::on_accept(uint16_t SessionId, sockaddr* pSockaddr)
+	void NetReceiver::on_accept(uint16_t SessionId, const PeerAddress& PeerAddr)
 	{
 		char Buf[BASE_HEADER_LEN];
+		sockaddr* pSockaddr = (sockaddr*) & PeerAddr;
 		SOCKET SendFd = (pSockaddr->sa_family == AF_INET ? m_ListenFd : m_ListenFd6);
 		//未能分配可用Session
 		if (ERROR_SESSION_ID == SessionId)
 		{
 			create_header(Buf, PROTOCOL_BASE_CONNECT_RFS);
 			::sendto(SendFd, Buf, BASE_HEADER_LEN, 0, pSockaddr, ADDR_LEN_IPV6);
-			g_pPeerManager->release_sockaddr(pSockaddr);
 			return;
 		}
 		//建立映射失败
-		if (false == g_pSessionManager->new_session(SessionId, pSockaddr))
+		if (false == g_pSessionManager->new_session(SessionId, PeerAddr))
 		{
 			create_header(Buf, PROTOCOL_BASE_CONNECT_RFS);
 			::sendto(SendFd, Buf, BASE_HEADER_LEN, 0, pSockaddr, ADDR_LEN_IPV6);
-			g_pPeerManager->release_sockaddr(pSockaddr);
 			return;
 		}
 		if (false == m_pNetHandler->handle_on_accept(SessionId))
@@ -53,7 +52,7 @@ namespace net
 		::sendto(SendFd, Buf, BASE_HEADER_LEN, 0, pSockaddr, ADDR_LEN_IPV6);
 	}
 
-	bool NetReceiver::on_gateway(sockaddr* pSockaddr, char* pMessage, uint16_t Len)
+	bool NetReceiver::on_gateway(const PeerAddress& PeerAddr, char* pMessage, uint16_t Len)
 	{
 		//长度小于协议头，或者大于等于KCP协议长度，是格式错误的消息
 		//无连接协议长度只允许在KCP协议长度(24Byte)以内
@@ -68,6 +67,7 @@ namespace net
 		{
 			return true;
 		}
+		sockaddr* pSockaddr = (sockaddr*)&PeerAddr;
 		//正常回复
 		if (DO_REPLY == Res)
 		{

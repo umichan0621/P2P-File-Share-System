@@ -25,11 +25,13 @@ namespace net
 		friend class Session;
 		typedef base::ObjectPool<Session> SessionPool;
 	public:
+		SeesionManager();
+
 		//初始化，输入三个SocketFd
 		bool init(SOCKET ListenFd, SOCKET ListenFd6, SOCKET ListenFdNAT);
 		
 		//sender建立session
-		bool new_session(uint16_t SessionId, sockaddr* pSockaddr);
+		bool new_session(uint16_t SessionId, const PeerAddress& PeerAddr);
 
 		//根据SessionId获取Session对象
 		Session* session(uint16_t SessionId);
@@ -48,13 +50,13 @@ namespace net
 		//尝试连接一个Peer
 		//输入RelaySessionId为告诉Peer联系方式的Session
 		//pSockaddr是主动去连接的Peer
-		void connect_peer(base::SHA1 CID,uint16_t RelaySessionId, sockaddr* pSockaddr);
+		void connect_peer(base::SHA1 CID,uint16_t RelaySessionId, const PeerAddress& PeerAddr);
 
 		//尝试连接一个不一定可以连上的Peer
-		void connect_peer(base::SHA1 CID, sockaddr* pSockaddr);
+		void connect_peer(base::SHA1 CID, const PeerAddress& PeerAddr);
 
 		//尝试ping一个Peer帮助他连上自己
-		void ping_peer(sockaddr* pSockaddr);
+		void ping_peer(const PeerAddress& PeerAddr);
 
 		//断开Session的连接
 		void disconnect(uint16_t SessionId);
@@ -68,11 +70,11 @@ namespace net
 		//IPv6接口，同connect()
 		uint16_t _connect6(const char* pIPAddress, uint16_t Port);
 
-		sockaddr* _delete_session(uint16_t SessionId);
+		void _delete_session(PeerAddress& PeerAddr,uint16_t SessionId);
 	private:
-		SOCKET							m_ListenFd = 0;
-		SOCKET							m_ListenFd6 = 0;
-		SOCKET							m_ListenFdNAT = 0;
+		SOCKET							m_ListenFd;
+		SOCKET							m_ListenFd6;
+		SOCKET							m_ListenFdNAT;
 	private://Session相关
 		SessionPool						m_SessionPool;
 		std::vector<Session*>			m_SessionArr;

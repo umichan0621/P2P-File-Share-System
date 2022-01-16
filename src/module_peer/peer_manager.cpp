@@ -23,20 +23,13 @@ namespace peer
 
 		m_PeerIdMap.rehash(BucketSize);
 		m_PeerMap.rehash(BucketSize);
-
-		//预分配sockaddr*
-		m_SockaddrPool.init(PeerCapacity < 128 ? PeerCapacity : 128);
 	}
 
-	int32_t PeerManager::peer_id(sockaddr* pSockaddr)
+	int32_t PeerManager::peer_id(const PeerAddress& PeerAddr)
 	{
-		if (nullptr == pSockaddr)
-		{
-			return 0;
-		}
 		std::lock_guard<std::mutex> Lock(m_PeerManagerMutex);
 		//没有记录，则创建
-		if (0 == m_PeerIdMap.count(pSockaddr))
+		if (0 == m_PeerIdMap.count(PeerAddr))
 		{
 			//已达到允许上限
 			if (m_PeerCapacity == 0)
@@ -45,14 +38,12 @@ namespace peer
 			}
 			--m_PeerCapacity;
 			int32_t CurId = _peer_id();
-			m_PeerIdMap[pSockaddr] = CurId;
-			//复制外部输入作为内部使用的sockaddr*
-			sockaddr_in6* pSockaddrTemp = m_SockaddrPool.allocate();
-			memcpy(pSockaddrTemp, (sockaddr_in6*)pSockaddr, KSOCKADDR_LEN_V6);
-			m_PeerMap[CurId] = Peer((sockaddr*)pSockaddrTemp);
+			m_PeerIdMap[PeerAddr] = CurId;
+
+			m_PeerMap[CurId] = Peer(PeerAddr);
 			return CurId;
 		}
-		int32_t CurId = m_PeerIdMap[pSockaddr];
+		int32_t CurId = m_PeerIdMap[PeerAddr];
 		if (CurId > 0)
 		{
 			++m_PeerMap[CurId].Count;
@@ -60,15 +51,16 @@ namespace peer
 		return CurId;
 	}
 
-	sockaddr* PeerManager::peer(int32_t PeerId, uint8_t& Status)
+	bool PeerManager::peer(int32_t PeerId, PeerAddress& PeerAddr, uint8_t& Status)
 	{
 		std::lock_guard<std::mutex> Lock(m_PeerManagerMutex);
 		if (0 == m_PeerMap.count(PeerId))
 		{
-			return nullptr;
+			return false;
 		}
 		Status = m_PeerMap[PeerId].Status;
-		return m_PeerMap[PeerId].PeerAddress;
+		PeerAddr= m_PeerMap[PeerId].PeerAddr;
+		return true;
 	}
 
 	uint8_t PeerManager::peer_status(int32_t PeerId)
@@ -90,10 +82,8 @@ namespace peer
 			--m_PeerMap[PeerId].Count;
 			if (0 == m_PeerMap[PeerId].Count)
 			{
-				sockaddr* pCurSockaddr = m_PeerMap[PeerId].PeerAddress;
-				m_PeerIdMap.erase(pCurSockaddr);
-				//回收Sockaddr
-				m_SockaddrPool.release((sockaddr_in6*)pCurSockaddr);
+				const PeerAddress& CurPeerAddr= m_PeerMap[PeerId].PeerAddr;
+				m_PeerIdMap.erase(CurPeerAddr);
 				m_PeerMap.erase(PeerId);
 				++m_PeerCapacity;
 			}
@@ -111,10 +101,8 @@ namespace peer
 				--m_PeerMap[PeerId].Count;
 				if (0 == m_PeerMap[PeerId].Count)
 				{
-					sockaddr* pCurSockaddr = m_PeerMap[PeerId].PeerAddress;
-					m_PeerIdMap.erase(pCurSockaddr);
-					//回收Sockaddr
-					m_SockaddrPool.release((sockaddr_in6*)pCurSockaddr);
+					const PeerAddress& CurPeerAddr = m_PeerMap[PeerId].PeerAddr;
+					m_PeerIdMap.erase(CurPeerAddr);
 					m_PeerMap.erase(PeerId);
 					++m_PeerCapacity;
 				}
@@ -122,71 +110,54 @@ namespace peer
 		}
 	}
 
-	void PeerManager::ban_peer(sockaddr* pSockaddr)
+	void PeerManager::ban_peer(const PeerAddress& PeerAddr)
 	{
-		if (nullptr == pSockaddr)
-		{
-			return;
-		}
 		std::lock_guard<std::mutex> Lock(m_PeerManagerMutex);
-		if (0 != m_PeerIdMap.count(pSockaddr))
+		if (0 != m_PeerIdMap.count(PeerAddr))
 		{
-			int32_t CurId = m_PeerIdMap[pSockaddr];
-			m_PeerIdMap[pSockaddr] = -1;
+			int32_t CurId = m_PeerIdMap[PeerAddr];
+			m_PeerIdMap[PeerAddr] = -1;
 			if (0 != m_PeerMap.count(CurId))
 			{
-				sockaddr* pCurSockaddr = m_PeerMap[CurId].PeerAddress;
-				m_PeerIdMap.erase(pCurSockaddr);
-				//回收Sockaddr
-				m_SockaddrPool.release((sockaddr_in6*)pCurSockaddr);
+				m_PeerIdMap.erase(PeerAddr);
 			}
 		}
 	}
 
-	sockaddr* PeerManager::get_sockaddr(const char* pIPAddressess, uint16_t Port) const
+	void PeerManager::get_sockaddr(PeerAddress& PeerAddr, const char* pIPAddressess, uint16_t Port) const
 	{
-		sockaddr_in* pSockaddr = (sockaddr_in*)new sockaddr_in6();
+		sockaddr_in* pSockaddr = (sockaddr_in*)&PeerAddr;
 		pSockaddr->sin_family = AF_INET;
 		inet_pton(AF_INET, pIPAddressess, &pSockaddr->sin_addr);		//设定新连接的IP
 		pSockaddr->sin_port = htons(Port);							//设定新连接的端口
-		return (sockaddr*)pSockaddr;
 	}
 
-	sockaddr* PeerManager::get_sockaddr6(const char* pIPAddressess, uint16_t Port) const
+	void PeerManager::get_sockaddr6(PeerAddress& PeerAddr, const char* pIPAddressess, uint16_t Port) const
 	{
-		sockaddr_in6* pSockaddr = new sockaddr_in6();
+		sockaddr_in6* pSockaddr = &PeerAddr;
 		pSockaddr->sin6_family = AF_INET6;
 		inet_pton(AF_INET6, pIPAddressess, &pSockaddr->sin6_addr);		//设定新连接的IP
 		pSockaddr->sin6_port = htons(Port);							//设定新连接的端口
-		return (sockaddr*)pSockaddr;
 	}
 
-	uint16_t PeerManager::session_id(sockaddr* pSockaddr)
+	uint16_t PeerManager::session_id(const PeerAddress& PeerAddr)
 	{
-		if (nullptr == pSockaddr)
-		{
-			return ERROR_SESSION_ID;
-		}
 		std::lock_guard<std::mutex> Lock(m_PeerManagerMutex);
 		//当前sockaddr未登记
-		if (0 == m_SessionIdMap.count(pSockaddr))
+		if (0 == m_SessionIdMap.count(PeerAddr))
 		{
 			return 0;
 		}
-		return 	m_SessionIdMap[pSockaddr];
+		return 	m_SessionIdMap[PeerAddr];
 	}
 
-	uint16_t PeerManager::connect_peer(sockaddr* pSockaddr)
+	uint16_t PeerManager::connect_peer(const PeerAddress& PeerAddr)
 	{
-		if (nullptr == pSockaddr)
-		{
-			return ERROR_SESSION_ID;
-		}
 		std::unique_lock<std::mutex> Lock(m_PeerManagerMutex);
 		//已经存在当前sockaddr
-		if (0 != m_SessionIdMap.count(pSockaddr))
+		if (0 != m_SessionIdMap.count(PeerAddr))
 		{
-			return 	m_SessionIdMap[pSockaddr];
+			return 	m_SessionIdMap[PeerAddr];
 		}
 		//获取未分配过的SessionId
 		uint16_t SessionId = _session_id();
@@ -197,7 +168,7 @@ namespace peer
 		{
 			int32_t CurId;
 			//没有记录，则创建
-			if (0 == m_PeerIdMap.count(pSockaddr))
+			if (0 == m_PeerIdMap.count(PeerAddr))
 			{
 				//已达到允许上限
 				if (0==m_PeerCapacity)
@@ -206,12 +177,12 @@ namespace peer
 				}
 				--m_PeerCapacity;
 				CurId = _peer_id();
-				m_PeerIdMap[pSockaddr] = CurId;
-				m_PeerMap[CurId] = Peer(pSockaddr);
+				m_PeerIdMap[PeerAddr] = CurId;
+				m_PeerMap[CurId] = Peer(PeerAddr);
 			}
 			else
 			{
-				CurId = m_PeerIdMap[pSockaddr];
+				CurId = m_PeerIdMap[PeerAddr];
 				if (CurId > 0)
 				{
 					++m_PeerMap[CurId].Count;
@@ -221,34 +192,28 @@ namespace peer
 			m_PeerMap[CurId].Status = GOOD;
 		}
 		//建立映射
-		m_SessionIdMap[pSockaddr] = SessionId;
+		m_SessionIdMap[PeerAddr] = SessionId;
 		return SessionId;
 	}
 
-	void PeerManager::disconnect_peer(sockaddr* pSockaddr)
+	void PeerManager::disconnect_peer(const PeerAddress& PeerAddr)
 	{
-		if (nullptr == pSockaddr)
-		{
-			return;
-		}
 		std::lock_guard<std::mutex> Lock(m_PeerManagerMutex);
-		if (0 == m_SessionIdMap.count(pSockaddr))
+		if (0 == m_SessionIdMap.count(PeerAddr))
 		{
 			return;
 		}
 		//删除sockaddr*->SessionId的映射
-		m_SessionIdMap.erase(pSockaddr);
+		m_SessionIdMap.erase(PeerAddr);
 		//改变节点状态
-		int32_t CurId = m_PeerIdMap[pSockaddr];
+		int32_t CurId = m_PeerIdMap[PeerAddr];
 		if (0 != m_PeerMap.count(CurId))
 		{
 			--m_PeerMap[CurId].Count;
-			//回收
+
 			if (0 == m_PeerMap[CurId].Count)
 			{
-				m_PeerIdMap.erase(pSockaddr);
-				//回收Sockaddr
-				m_SockaddrPool.release((sockaddr_in6*)pSockaddr);
+				m_PeerIdMap.erase(PeerAddr);
 				m_PeerMap.erase(CurId);
 				++m_PeerCapacity;
 			}
@@ -263,18 +228,6 @@ namespace peer
 	{
 		std::lock_guard<std::mutex> Lock(m_PeerManagerMutex);
 		m_SessionIdQueue.push_back(SessionId);
-	}
-
-
-	sockaddr* PeerManager::allocate_sockaddr()
-	{
-		sockaddr* Res = (sockaddr*)m_SockaddrPool.allocate();
-		return Res;
-	}
-
-	void PeerManager::release_sockaddr(sockaddr* pSockaddr)
-	{
-		m_SockaddrPool.release((sockaddr_in6*)pSockaddr);
 	}
 
 	uint16_t PeerManager::_session_id()
@@ -346,8 +299,9 @@ namespace peer
 		m_PrepareToConnect.push_back(PeerId);
 	}
 
-	bool PeerManager::info(sockaddr* pSockaddr, std::string& strIP, uint16_t& Port)
+	bool PeerManager::info(const PeerAddress& PeerAddr, std::string& strIP, uint16_t& Port)
 	{
+		sockaddr* pSockaddr = (sockaddr*)&PeerAddr;
 		if (AF_INET == pSockaddr->sa_family)//IPV4
 		{
 			char Buf[INET_ADDRSTRLEN];

@@ -61,10 +61,12 @@ static bool second_try_connect_peer(base::SHA1 CID, uint16_t TargetSessionId)
 		{
 			std::string strIP;
 			uint16_t Port;
-			bool res2 = peer::PeerManager::info(pTargetSession->get_sockaddr(), strIP, Port);
+			PeerAddress TargetPeerAddr = { 0 };
+			pTargetSession->get_peer_addr(TargetPeerAddr);
+			bool res2 = peer::PeerManager::info(TargetPeerAddr, strIP, Port);
 			if (res2)
 			{
-				LOG_TRACE << "Can't connect Peer "<<strIP << ":" << Port<<" maybe because NAT or offline.";
+				LOG_TRACE << "Can't connect Peer " << strIP << ":" << Port << " maybe because NAT or offline.";
 			}
 		}
 		//Test
@@ -97,7 +99,9 @@ static bool second_try_connect_peer(base::SHA1 CID, uint16_t TargetSessionId)
 		}
 #endif
 		//加入路由表
-		int32_t PeerId = g_pPeerManager->peer_id(pTargetSession->get_sockaddr());
+		PeerAddress TargetPeerAddr = { 0 };
+		pTargetSession->get_peer_addr(TargetPeerAddr);
+		int32_t PeerId = g_pPeerManager->peer_id(TargetPeerAddr);
 		if (PeerId >= 0)
 		{
 			peer::Node CurNode(CID.Hash, PeerId);
@@ -175,7 +179,6 @@ namespace handler
 
 	int8_t HandlerBase::handle_connect_req(uint16_t& SessionId, char* pMessage, uint16_t& Len)
 	{
-		LOG_DEBUG << "Connected Req";
 		//对端节点申请建立连接，如果连接建立需要加入定时器检测心跳包
 		//还未建立连接
 		if (ERROR_SESSION_ID == SessionId)
@@ -190,7 +193,6 @@ namespace handler
 
 	int8_t HandlerBase::handle_connect_ack(uint16_t& SessionId, char* pMessage, uint16_t& Len)
 	{
-		LOG_DEBUG << "Connected";
 		net::Session* pCurSession = g_pSessionManager->session(SessionId);
 		if (nullptr == pCurSession)
 		{
@@ -204,6 +206,17 @@ namespace handler
 			g_pTimer->add_timer(HEARTBEAT_CLOCK, std::bind(heartbeat_probe, SessionId));
 			//连接成功，接下来需要查询PID和CID
 			g_pPeerManager->search_push(SessionId);
+			{//TEST
+				std::string strIP;
+				uint16_t Port;
+				PeerAddress CurPeerAddr = { 0 };
+				pCurSession->get_peer_addr(CurPeerAddr);
+				bool res1 = peer::PeerManager::info(CurPeerAddr, strIP, Port);
+				if (false != res1)
+				{
+					LOG_TRACE << "Connect to " << strIP << ":" << Port;
+				}
+			}//TEST
 		}
 		//无需回复
 		return DO_NOTHING;
@@ -232,26 +245,23 @@ namespace handler
 		{
 			return DO_NOTHING;
 		}
-		sockaddr_in6 TargetSockaddr6 = { 0 };
-		memcpy(&TargetSockaddr6, &pMessage[2], KSOCKADDR_LEN_V6);
-		sockaddr* pTargetSockaddr = (sockaddr*)&TargetSockaddr6;
-		uint16_t TargetSessionId = g_pPeerManager->session_id(pTargetSockaddr);
+		PeerAddress ReqPeerAddr = { 0 }, TargetPeerAddr = { 0 };
+		pReqSession->get_peer_addr(ReqPeerAddr);
+		memcpy(&TargetPeerAddr, &pMessage[2], KSOCKADDR_LEN_V6);
+		uint16_t TargetSessionId = g_pPeerManager->session_id(TargetPeerAddr);
 
 		{//Test
 			std::string strIP, strIP1;
 			uint16_t Port, Port1;
 
+			bool res1 = peer::PeerManager::info(ReqPeerAddr, strIP, Port);
+			bool res2 = peer::PeerManager::info(TargetPeerAddr, strIP1, Port1);
+			if (res1 && res2)
 			{
-				bool res1 = peer::PeerManager::info(pReqSession->get_sockaddr(), strIP, Port);
-				bool res2 = peer::PeerManager::info(pTargetSockaddr, strIP1, Port1);
-				if (res1 && res2)
-				{
-					LOG_TRACE << strIP << ":" << Port << " want to connect " << strIP1 << ":" << Port1;
-				}
+				LOG_TRACE << strIP << ":" << Port << " want to connect " << strIP1 << ":" << Port1;
 			}
-
 		}//Test
-		
+
 		//目标Peer不可达，拒绝协助
 		if (0 == TargetSessionId || ERROR_SESSION_ID == TargetSessionId)
 		{
@@ -272,18 +282,16 @@ namespace handler
 		//告知请求节点尝试继续连接，已通知目标节点协助UDP打洞
 		pReqSession->send_reliable(pMessage, Len);
 
-		//请求方的sockaddr
-		sockaddr_in6* pReqSockaddr = (sockaddr_in6*)pReqSession->get_sockaddr();
 		create_header(pMessage, PROTOCOL_BASE_PING_HELP);
-		memcpy(&pMessage[2], pReqSockaddr, KSOCKADDR_LEN_V6);
+		memcpy(&pMessage[2], &ReqPeerAddr, KSOCKADDR_LEN_V6);
 		//通知目标节点协助UDP打洞
 		pTargetSession->send_reliable(pMessage, 2 + KSOCKADDR_LEN_V6);
 		//TEST
 		{
 			std::string strIP, strIP1;
 			uint16_t Port, Port1;
-			bool res1 = peer::PeerManager::info(pReqSession->get_sockaddr(), strIP, Port);
-			bool res2 = peer::PeerManager::info(pTargetSession->get_sockaddr(), strIP1, Port1);
+			bool res1 = peer::PeerManager::info(ReqPeerAddr, strIP, Port);
+			bool res2 = peer::PeerManager::info(TargetPeerAddr, strIP1, Port1);
 			if (res1 && res2)
 			{
 				LOG_TRACE << "Try help " << strIP << ":" << Port << " connect " << strIP1 << ":" << Port1;
@@ -298,10 +306,9 @@ namespace handler
 		//对方已接受请求，已经通知另一个节点尝试ping自己
 		//如果NAT没问题可以实现UDP打洞
 		//继续尝试连接
-		sockaddr_in6 TargetSockaddr6 = { 0 };
-		memcpy(&TargetSockaddr6, &pMessage[2], KSOCKADDR_LEN_V6);
-		sockaddr* pTargetSockaddr = (sockaddr*)&TargetSockaddr6;
-		uint16_t TargetSessionId = g_pPeerManager->session_id(pTargetSockaddr);
+		PeerAddress TargetPeerAddr = { 0 };
+		memcpy(&TargetPeerAddr, &pMessage[2], KSOCKADDR_LEN_V6);
+		uint16_t TargetSessionId = g_pPeerManager->session_id(TargetPeerAddr);
 		if (0 != TargetSessionId && ERROR_SESSION_ID != TargetSessionId)
 		{
 			const uint8_t* pKey = (uint8_t*)&pMessage[30];
@@ -316,10 +323,12 @@ namespace handler
 				std::string strIP, strIP1;
 				uint16_t Port, Port1;
 				net::Session* pAckSession = g_pSessionManager->session(SessionId);
+				PeerAddress AckPeerAddr = { 0 };
+				pAckSession->get_peer_addr(AckPeerAddr);
 				if (nullptr != pAckSession)
 				{
-					bool res1 = peer::PeerManager::info(pAckSession->get_sockaddr(), strIP, Port);
-					bool res2 = peer::PeerManager::info(pTargetSockaddr, strIP1, Port1);
+					bool res1 = peer::PeerManager::info(AckPeerAddr, strIP, Port);
+					bool res2 = peer::PeerManager::info(TargetPeerAddr, strIP1, Port1);
 					if (res1 && res2)
 					{
 						LOG_TRACE << strIP << ":" << Port << " will help me to connect " << strIP1 << ":" << Port1;
@@ -335,10 +344,9 @@ namespace handler
 	{
 		LOG_ERROR << "Conenct Help Rfs";
 		//拒绝协助，就直接断开连接
-		sockaddr_in6 TargetSockaddr6 = { 0 };
-		memcpy(&TargetSockaddr6, &pMessage[2], KSOCKADDR_LEN_V6);
-		sockaddr* pTargetSockaddr = (sockaddr*)&TargetSockaddr6;
-		uint16_t TargetSessionId = g_pPeerManager->session_id(pTargetSockaddr);
+		PeerAddress TargetPeeraddr = { 0 };
+		memcpy(&TargetPeeraddr, &pMessage[2], KSOCKADDR_LEN_V6);
+		uint16_t TargetSessionId = g_pPeerManager->session_id(TargetPeeraddr);
 		if (0 != TargetSessionId && ERROR_SESSION_ID != TargetSessionId)
 		{
 			g_pSessionManager->disconnect(TargetSessionId);
@@ -346,10 +354,10 @@ namespace handler
 			{
 				std::string strIP;
 				uint16_t Port;
-				bool res = peer::PeerManager::info(pTargetSockaddr, strIP, Port);
+				bool res = peer::PeerManager::info(TargetPeeraddr, strIP, Port);
 				if (true == res)
 				{
-					LOG_TRACE << "Fail to connect" << strIP << ":" << Port << ", Relay Node can't help.";
+					LOG_TRACE << "Fail to connect " << strIP << ":" << Port << ", Relay Node can't help.";
 				}
 			}
 			//Test
@@ -366,7 +374,6 @@ namespace handler
 			if (SessionStatus::STATUS_DISCONNECT == pCurSession->status())
 			{
 				pCurSession->set_status(SessionStatus::STATUS_PING_COMPLETE);
-				LOG_DEBUG << "Ping Success";
 			}
 		}
 		//无需回复
@@ -375,7 +382,6 @@ namespace handler
 
 	int8_t HandlerBase::handle_ping_req(uint16_t& SessionId, char* pMessage, uint16_t& Len)
 	{
-		LOG_DEBUG << "Recv Ping";
 		//对端节点发送PING_REQ，尝试ping本机，直接回复ACK
 		create_header(pMessage, PROTOCOL_BASE_PING_ACK);
 		//当前状态未连接
@@ -384,21 +390,20 @@ namespace handler
 
 	int8_t HandlerBase::handle_ping_help(uint16_t& SessionId, char* pMessage, uint16_t& Len)
 	{
-		sockaddr_in6 TargetSockaddr6 = { 0 };
-		memcpy(&TargetSockaddr6, &pMessage[2], KSOCKADDR_LEN_V6);
-		sockaddr* pTargetSockaddr = (sockaddr*)&TargetSockaddr6;
-		g_pSessionManager->ping_peer(pTargetSockaddr);
+		PeerAddress TargetPeerAddr = { 0 };
+		memcpy(&TargetPeerAddr, &pMessage[2], KSOCKADDR_LEN_V6);
+		g_pSessionManager->ping_peer(TargetPeerAddr);
 		//TEST
 		{
 			std::string strIP;
 			uint16_t Port;
 
 
-				bool res1 = peer::PeerManager::info(pTargetSockaddr, strIP, Port);
-				if (res1)
-				{
-					LOG_TRACE << "Ping "<<strIP << ":" << Port << " to help it to connect me.";
-				}
+			bool res1 = peer::PeerManager::info(TargetPeerAddr, strIP, Port);
+			if (res1)
+			{
+				LOG_TRACE << "Ping " << strIP << ":" << Port << " to help it to connect me.";
+			}
 		}
 		//TEST
 		return DO_NOTHING;
