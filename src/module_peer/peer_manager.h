@@ -78,6 +78,7 @@ namespace peer
 		{
 			bool operator()(const PeerAddress& PeerAddr1, const PeerAddress& PeerAddr2) const
 			{
+				//PeerAddr1.sin6_addr.
 				sockaddr* pSockaddr1 = (sockaddr*)&PeerAddr1;
 				sockaddr* pSockaddr2 = (sockaddr*)&PeerAddr2;
 				for (uint16_t i = 0; i < 14; ++i)

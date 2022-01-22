@@ -82,7 +82,7 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 #ifndef TRACKER_MODE
 				base::SHA1 CID = { 0 };
 				memcpy(&CID, pKey, KLEN_KEY);
-				std::list<uint16_t> PartnerList;
+				std::vector<uint16_t> PartnerList;
 				bool bRes = g_pPartnerTable->search_cid(CID, PartnerList);
 				//PartnerTable命中
 				if (true == bRes)
@@ -138,7 +138,7 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 						bool res = peer::PeerManager::info(ReqAddr, strIP, Port);
 						if (false != res)
 						{
-							LOG_TRACE << "Add CID = " << strCID << ", Peer:" << strIP << ":" << Port << " to Partner Table";
+							LOG_TRACE << "Add <" << strCID << ", " << strIP << ":" << Port << "> to Partner Table";
 						}
 					}
 					//TEST
@@ -152,16 +152,17 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 				//构造节点
 				peer::Node CurNode(pKey, ReqPeerId);
 				//读取几个路由表中距离最近的节点
-				std::list<int32_t> List;
-				g_pRoutingTable->get_node(pKey, List);
+				std::unordered_set<int32_t> PeerSet;
+				g_pRoutingTable->get_node(pKey, PeerSet);
+				LOG_TRACE << "Search in Routing Table and find result: " << PeerSet.size();
 				//当前节点能够找到距离较近的其他节点，应该返回数据
 				//协议格式:
 				//[固定头部(2B)] +[PID/CID(20B)]+(0-α个)[[sockaddr(28B)]+[Status[1B]]
-				if (true != List.empty())
+				if (false== PeerSet.empty())
 				{
 					memcpy(&pSendBuf[2], pKey, KLEN_KEY);
 					uint16_t Pos = 2 + KLEN_KEY;
-					for (int32_t SearchPeerID : List)
+					for (int32_t SearchPeerID : PeerSet)
 					{
 						if (ReqPeerId == SearchPeerID)
 						{
@@ -192,7 +193,7 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 					bool res = peer::PeerManager::info(ReqAddr, strIP, Port);
 					if (false != res)
 					{
-						LOG_TRACE << "Add CID = " << strCID << ", Peer:" << strIP << ":" << Port << " to Routing Table";
+						LOG_TRACE << "Add <" << strCID << ", " << strIP << ":" << Port << "> to Routing Table";
 					}
 				}
 			}

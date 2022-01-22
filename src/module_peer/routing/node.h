@@ -1,7 +1,7 @@
-/***********************************************************************/
-/* Ãû³Æ:													   */
-/* ËµÃ÷:										   */
-/* ´´½¨Ê±¼ä:2022/01/07												   */
+ï»¿/***********************************************************************/
+/* åç§°:													   */
+/* è¯´æ˜:										   */
+/* åˆ›å»ºæ—¶é—´:2022/01/07												   */
 /* Email:umichan0621@gmail.com									       */
 /***********************************************************************/
 #pragma once
@@ -14,7 +14,7 @@
 //#endif
 #include <module_peer/peer_manager.h>
 
-constexpr uint8_t KLEN_KEY = 20;//=SHA1³¤¶È
+constexpr uint8_t KLEN_KEY = 20;//=SHA1é•¿åº¦
 namespace peer
 {
 	class Node
@@ -23,31 +23,31 @@ namespace peer
 		Node() = delete;
 		Node(const uint8_t Key[], int32_t PeerId);
 	public:
-		//·µ»Øµ±Ç°½ÚµãµÄPeerId
+		//è¿”å›å½“å‰èŠ‚ç‚¹çš„PeerId
 		int32_t peer_id() const;
 
 		uint8_t node_status() const;
 
-		//¼ÆËãÁ½¸öKeyÖ®¼äµÄ¾àÀë
-		//¾àÀë¶¨ÒåÎªÁ½¸ö½ÚµãKeyÖµÒì»òÖ®ºóÇ°Ãæ0µÄ¸öÊı
-		//¸ßÎ»Ó°Ïì´ó£¬µÍÎ»Ó°ÏìĞ¡
-		//ÖµÔ½Ğ¡¾àÀëÔ½½ü£¬ÖµÔ½´ó¾àÀëÔ½Ô¶
+		//è®¡ç®—ä¸¤ä¸ªKeyä¹‹é—´çš„è·ç¦»
+		//è·ç¦»å®šä¹‰ä¸ºä¸¤ä¸ªèŠ‚ç‚¹Keyå€¼å¼‚æˆ–ä¹‹åå‰é¢0çš„ä¸ªæ•°
+		//é«˜ä½å½±å“å¤§ï¼Œä½ä½å½±å“å°
+		//å€¼è¶Šå°è·ç¦»è¶Šè¿‘ï¼Œå€¼è¶Šå¤§è·ç¦»è¶Šè¿œ
 		static uint8_t distance(const uint8_t Key1[], const uint8_t Key2[]);
 
-		//¼ÆËãÁ½¸öNodeÖ®¼äµÄ¾àÀë
+		//è®¡ç®—ä¸¤ä¸ªNodeä¹‹é—´çš„è·ç¦»
 		static uint8_t distance(const Node& N1, const Node& N2);
 
-		//¼ÆËã×Ô¼ººÍÒ»¸öKeyµÄ¾àÀë
+		//è®¡ç®—è‡ªå·±å’Œä¸€ä¸ªKeyçš„è·ç¦»
 		uint8_t distance(const uint8_t Key[]) const;
 
-		//¼ÆËã×Ô¼ºÓëÆäËû½ÚµãµÄ¾àÀë
+		//è®¡ç®—è‡ªå·±ä¸å…¶ä»–èŠ‚ç‚¹çš„è·ç¦»
 		uint8_t distance(const Node& N) const;
 
-		//ÌÔÌ­µ±Ç°½Úµã
-		//ÎªPeerµÄ¼ÆÊı-1
+		//æ·˜æ±°å½“å‰èŠ‚ç‚¹
+		//ä¸ºPeerçš„è®¡æ•°-1
 		void free();
 	private:
 		uint8_t					m_Key[KLEN_KEY];
-		int32_t					m_PeerId;			//¼ÇÂ¼PeerId
+		int32_t					m_PeerId;			//è®°å½•PeerId
 	};
 }

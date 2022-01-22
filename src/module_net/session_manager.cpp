@@ -503,7 +503,6 @@ namespace net
 		pCurSession->get_peer_addr(CurPeerAddr);
 		//终止Sender内的session
 		_delete_session(CurPeerAddr, SessionId);
-
 		//直接断开PeerAddress->SessionId的映射
 		g_pPeerManager->disconnect_peer(CurPeerAddr);
 
@@ -526,7 +525,6 @@ namespace net
 		pCurSession->get_peer_addr(CurPeerAddr);
 		//终止Sender内的session
 		_delete_session(CurPeerAddr, SessionId);
-
 		//直接断开PeerAddress->SessionId的映射
 		g_pPeerManager->disconnect_peer(CurPeerAddr);
 

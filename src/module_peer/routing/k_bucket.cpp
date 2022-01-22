@@ -1,5 +1,6 @@
-#include "k_bucket.h"
+ï»¿#include "k_bucket.h"
 #include <map>
+#include <base/logger/logger.h>
 
 namespace peer
 {
@@ -8,7 +9,7 @@ namespace peer
 	void KBucket::add_node(Node& N)
 	{
 		std::lock_guard<std::mutex> Lock(m_KBucketMutex);
-		//KÍ°»¹Ã»Âú
+		//Kæ¡¶è¿˜æ²¡æ»¡
 		if (m_NodeList.size() < KBUCKET_SIZE)
 		{
 			m_NodeList.push_back(std::move(N));
@@ -18,13 +19,13 @@ namespace peer
 			uint8_t CurStatus = N.node_status();
 			for (int32_t i = 0; i < m_NodeList.size(); ++i)
 			{
-				//µ±Ç°½Úµã±ÈĞÂ½Úµã×´Ì¬²î
+				//å½“å‰èŠ‚ç‚¹æ¯”æ–°èŠ‚ç‚¹çŠ¶æ€å·®
 				if (m_NodeList.front().node_status() > CurStatus)
 				{
-					//ÌÔÌ­¾É½Úµã£¬¼ÆÊı-1
+					//æ·˜æ±°æ—§èŠ‚ç‚¹ï¼Œè®¡æ•°-1
 					m_NodeList.front().free();
 					m_NodeList.pop_front();
-					//ĞÂ½Úµã¼ÓÈë¶ÓÎ²
+					//æ–°èŠ‚ç‚¹åŠ å…¥é˜Ÿå°¾
 					m_NodeList.push_back(std::move(N));
 					return;
 				}
@@ -35,10 +36,10 @@ namespace peer
 				}
 			}
 		}
-		//×ßµ½ÕâÀï±íÊ¾²»»á¼ÓÈëĞÂ½Úµã£¬Ò²²»»áÌÔÌ­¾É½Úµã
+		//èµ°åˆ°è¿™é‡Œè¡¨ç¤ºä¸ä¼šåŠ å…¥æ–°èŠ‚ç‚¹ï¼Œä¹Ÿä¸ä¼šæ·˜æ±°æ—§èŠ‚ç‚¹
 	}
 
-	void KBucket::get_node(const uint8_t Key[], std::list<int32_t>& PeerList)
+	void KBucket::get_node(const uint8_t Key[], std::unordered_set<int32_t>& PeerList)
 	{
 		std::lock_guard<std::mutex> Lock(m_KBucketMutex);
 		std::map<uint8_t, int32_t> NearNodeMap;
@@ -48,7 +49,11 @@ namespace peer
 		}
 		for (auto& It : NearNodeMap)
 		{
-			PeerList.push_back(It.second);
+			PeerList.insert(It.second);
+			if (PeerList.size() >= KALPHA_REQUESTS)
+			{
+				return;
+			}
 		}
 	}
 }

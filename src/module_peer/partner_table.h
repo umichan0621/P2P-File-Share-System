@@ -1,13 +1,14 @@
-/***********************************************************************/
-/* Ãû³Æ:													   */
-/* ËµÃ÷:										   */
-/* ´´½¨Ê±¼ä:2022/01/07												   */
+ï»¿/***********************************************************************/
+/* åç§°:													   */
+/* è¯´æ˜:										   */
+/* åˆ›å»ºæ—¶é—´:2022/01/07												   */
 /* Email:umichan0621@gmail.com									       */
 /***********************************************************************/
 #pragma once
 #include <mutex>
 #include <set>
 #include <list>
+#include <vector>
 #include <unordered_map>
 #include <base/singleton.hpp>
 #include <base/hash_function/file_sha1.h>
@@ -18,42 +19,42 @@ namespace peer
 		std::set<uint16_t>, 
 		base::SHA1HashFunc, 
 		base::SHA1EqualFunc>					PartnerMap;		//SHA1->Partner List
-	typedef std::list<base::SHA1>				CIDList;		//¶ÔÍâÌá¹©×Ô¼º¸ĞĞËÈ¤µÄCID
+	typedef std::list<base::SHA1>				CIDList;		//å¯¹å¤–æä¾›è‡ªå·±æ„Ÿå…´è¶£çš„CID
 	typedef std::unordered_map <uint16_t,
 		std::list<base::SHA1>>					PartnerContent;	//Partner->SHA1 List
-	/** \brief PartnerTableÓÃÓÚ¹ÜÀíËùÓĞÓë×Ô¼ºÓĞÖ±½Ó¹ØÁªµÄ½Úµã¡£
-	 * Ö»ÓĞ¶ÔÏàÍ¬CID¸ĞĞËÈ¤ÇÒ±£³ÖÁ¬½ÓµÄ½Úµã²Å»á±»¼ÓÈëPartnerTable¡£
-	 * Ö»ÒªÕÒµ½Partner¾ÍÄÜ¿ìËÙ·¢ÏÖÍøÂçÖĞ¶ÔCID¸ĞĞËÈ¤µÄ´óÁ¿¿É¿¿½Úµã¡£
+	/** \brief PartnerTableç”¨äºç®¡ç†æ‰€æœ‰ä¸è‡ªå·±æœ‰ç›´æ¥å…³è”çš„èŠ‚ç‚¹ã€‚
+	 * åªæœ‰å¯¹ç›¸åŒCIDæ„Ÿå…´è¶£ä¸”ä¿æŒè¿æ¥çš„èŠ‚ç‚¹æ‰ä¼šè¢«åŠ å…¥PartnerTableã€‚
+	 * åªè¦æ‰¾åˆ°Partnerå°±èƒ½å¿«é€Ÿå‘ç°ç½‘ç»œä¸­å¯¹CIDæ„Ÿå…´è¶£çš„å¤§é‡å¯é èŠ‚ç‚¹ã€‚
 	 */
 	class PartnerTable
 	{
 	public:
-		//ÉèÖÃÍ¬Ò»¸öCIDÔÊĞíÍ¬Ê±Á¬½ÓµÄ×î´óSessionÊıÁ¿
+		//è®¾ç½®åŒä¸€ä¸ªCIDå…è®¸åŒæ—¶è¿æ¥çš„æœ€å¤§Sessionæ•°é‡
 		void set_partner_max_num(uint16_t PartnerMaxNum);
 
-		//Ìí¼ÓÒ»¸ö¸ĞĞËÈ¤µÄCID
+		//æ·»åŠ ä¸€ä¸ªæ„Ÿå…´è¶£çš„CID
 		void add_cid(const base::SHA1& CID);
 
-		//ÎªÌØ¶¨CIDÌí¼ÓÒ»¸öPartner
+		//ä¸ºç‰¹å®šCIDæ·»åŠ ä¸€ä¸ªPartner
 		void add_partner(const base::SHA1& CID, uint16_t SessionId);
 
-		//É¾³ıÒ»¸öPartner£¬²¢É¾³ıÆäËùÓĞCIDÖĞµÄ¼ÇÂ¼
+		//åˆ é™¤ä¸€ä¸ªPartnerï¼Œå¹¶åˆ é™¤å…¶æ‰€æœ‰CIDä¸­çš„è®°å½•
 		void delete_partner(uint16_t SessionId);
 
-		//²éÑ¯Ò»¸öPartnerÊÇ·ñÒÑ¾­¼ÇÂ¼£¬´æÔÚ·µ»Øtrue
+		//æŸ¥è¯¢ä¸€ä¸ªPartneræ˜¯å¦å·²ç»è®°å½•ï¼Œå­˜åœ¨è¿”å›true
 		bool search_partner(const base::SHA1& CID, uint16_t SessionId);
 
-		//É¾³ıÒ»¸öCID£¬²¢É¾³ıÓëÆäÏà¹ØµÄPartner
+		//åˆ é™¤ä¸€ä¸ªCIDï¼Œå¹¶åˆ é™¤ä¸å…¶ç›¸å…³çš„Partner
 		void delete_cid(const base::SHA1& CID);
 
-		//²éÑ¯Ò»¸öCID£¬Èç¹û´æÔÚ·µ»Øtrue
+		//æŸ¥è¯¢ä¸€ä¸ªCIDï¼Œå¦‚æœå­˜åœ¨è¿”å›true
 		bool search_cid(const base::SHA1& CID);
 
-		//²éÑ¯Ò»¸öCID£¬²éÑ¯³É¹¦·µ»Øtrue£¬²¢¼ÓÈëPartnerList
-		bool search_cid(const base::SHA1& CID, std::list<uint16_t>& PartnerList);
+		//æŸ¥è¯¢ä¸€ä¸ªCIDï¼ŒæŸ¥è¯¢æˆåŠŸè¿”å›trueï¼Œå¹¶å°†æ‰€æœ‰çš„PartnetåŠ å…¥PartnerList
+		bool search_cid(const base::SHA1& CID, std::vector<uint16_t>& PartnerList);
 
-		//»ñÈ¡Ò»¸öCID£¬»ñÈ¡Ê§°Ü·µ»Øfalse
-		//ÓÃÓÚÏòÆäËû½ÚµãÀ©É¢×Ô¼ºÓĞCIDÕâ¼şÊÂ
+		//è·å–ä¸€ä¸ªCIDï¼Œè·å–å¤±è´¥è¿”å›false
+		//ç”¨äºå‘å…¶ä»–èŠ‚ç‚¹æ‰©æ•£è‡ªå·±æœ‰CIDè¿™ä»¶äº‹
 		bool get_cid(base::SHA1& CID);
 	private:
 		uint16_t						m_PartnerMaxNum = 0;

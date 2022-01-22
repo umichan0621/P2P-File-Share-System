@@ -1,4 +1,4 @@
-#include "partner_table.h"
+ï»¿#include "partner_table.h"
 
 namespace peer
 {
@@ -10,7 +10,7 @@ namespace peer
 	void PartnerTable::add_cid(const base::SHA1& CID)
 	{
 		std::unique_lock<std::mutex> Lock(m_PartnerMutex);
-		//ÒÑ¾­¼ÇÂ¼
+		//å·²ç»è®°å½•
 		if (0 == m_PartnerMap.count(CID))
 		{
 			m_PartnerMap[CID].clear();
@@ -21,7 +21,7 @@ namespace peer
 	void PartnerTable::add_partner(const base::SHA1& CID, uint16_t SessionId)
 	{
 		std::unique_lock<std::mutex> Lock(m_PartnerMutex);
-		//ÒÑ¾­¼ÇÂ¼
+		//å·²ç»è®°å½•
 		if (0 != m_PartnerMap.count(CID))
 		{
 			if (0 == m_PartnerMap[CID].count(SessionId))
@@ -43,11 +43,11 @@ namespace peer
 		std::unique_lock<std::mutex> Lock(m_PartnerMutex);
 		if (0 != m_PartnerContent.count(SessionId))
 		{
-			//É¾³ıÓëSessionIdÓĞ¹ØµÄCIDÖĞµÄSessionId
+			//åˆ é™¤ä¸SessionIdæœ‰å…³çš„CIDä¸­çš„SessionId
 			for (auto& CID : m_PartnerContent[SessionId])
 			{
 				m_PartnerMap[CID].erase(SessionId);
-				//Èç¹ûÎª¿Õ
+				//å¦‚æœä¸ºç©º
 				if (true == m_PartnerMap[CID].empty())
 				{
 					m_PartnerMap.erase(CID);
@@ -76,16 +76,16 @@ namespace peer
 		std::unique_lock<std::mutex> Lock(m_PartnerMutex);
 		if (0 != m_PartnerMap.count(CID))
 		{
-			//ÓëCIDÓĞ¹ØµÄËùÓĞSessionId
+			//ä¸CIDæœ‰å…³çš„æ‰€æœ‰SessionId
 			for (auto& SessionId : m_PartnerMap[CID])
 			{
 				for (auto It = m_PartnerContent[SessionId].begin(); It != m_PartnerContent[SessionId].end(); ++It)
 				{
-					//É¾³ıSessionIdÖĞµÄCID¼ÇÂ¼
+					//åˆ é™¤SessionIdä¸­çš„CIDè®°å½•
 					if ((*It) == CID)
 					{
 						m_PartnerContent[SessionId].erase(It);
-						//Èç¹ûÎª¿Õ
+						//å¦‚æœä¸ºç©º
 						if (true == m_PartnerContent[SessionId].empty())
 						{
 							m_PartnerContent.erase(SessionId);
@@ -103,7 +103,7 @@ namespace peer
 		return 0 != m_PartnerMap.count(CID);
 	}
 
-	bool PartnerTable::search_cid(const base::SHA1& CID, std::list<uint16_t>& PartnerList)
+	bool PartnerTable::search_cid(const base::SHA1& CID, std::vector<uint16_t>& PartnerList)
 	{
 		std::unique_lock<std::mutex> Lock(m_PartnerMutex);
 		if (0 == m_PartnerMap.count(CID))
@@ -125,7 +125,7 @@ namespace peer
 		}
 		while (true != m_CIDList.empty())
 		{
-			//µ±Ç°CIDÓĞĞ§
+			//å½“å‰CIDæœ‰æ•ˆ
 			if (0 != m_PartnerMap.count(m_CIDList.front()))
 			{
 				CID = m_CIDList.front();

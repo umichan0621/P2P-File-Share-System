@@ -21,27 +21,7 @@ int app(int argc, char* argv[])
 	return a.exec();
 }
 
-bool func()
-{
-	LOG_ERROR << "1";
-	return false;
-}
-union IP
-{
-	sockaddr s1;
-	sockaddr_in v4;
-	sockaddr_in6 v6;
-};
-void test()
-{
-	IP ip = { 0 };
 
-	ip.v4.sin_family = AF_INET;
-	
-	inet_pton(AF_INET, "192.168.50.69", &ip.v4.sin_addr);		//设定新连接的IP
-	ip.v4.sin_port = htons(11451);							//设定新连接的端口
-	//LOG_ERROR << sizeof(IP);
-}
 
 int main(int argc, char* argv[])
 {

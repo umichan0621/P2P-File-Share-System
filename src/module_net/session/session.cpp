@@ -22,21 +22,7 @@ namespace net
 		m_SessionStatus(SessionStatus::STATUS_DISCONNECT) {}
 		//m_pPeerInfo(new PeerInfo()) {}
 
-	Session::~Session()
-	{
-		if (nullptr != m_pSockaddr)
-		{
-			delete m_pSockaddr;
-		}
-		if (nullptr != m_Kcp)
-		{
-			ikcp_release(m_Kcp);
-		}
-		if (nullptr != m_pPeerInfo)
-		{
-			delete m_pPeerInfo;
-		}
-	}
+	Session::~Session(){}
 
 	void Session::reset_timeout()
 	{

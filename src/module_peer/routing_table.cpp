@@ -1,4 +1,5 @@
-#include "routing_table.h"
+﻿#include "routing_table.h"
+#include <unordered_set>
 #include <base/logger/logger.h>
 
 namespace peer
@@ -19,18 +20,27 @@ namespace peer
 	void RoutingTable::add_node(Node& N)
 	{
 		uint8_t Distance = N.distance(m_Key);
-		LOG_ERROR << "Distance = " << Distance;
 		m_VecKBucket[Distance].add_node(N);
 	}
 
-	void RoutingTable::get_node(const uint8_t Key[], std::list<int32_t>& PeerList)
+	void RoutingTable::get_node(const uint8_t Key[], std::unordered_set<int32_t>& PeerSet)
 	{
 		uint8_t Distance = Node::distance(m_Key, Key);
-
-		m_VecKBucket[Distance].get_node(Key, PeerList);
-		if (PeerList.size() > KALPHA_REQUESTS)
+		for (int32_t Cur = Distance; Cur < KLEN_KEY; ++Cur)
 		{
-			PeerList.resize(KALPHA_REQUESTS);
+			m_VecKBucket[Cur].get_node(Key, PeerSet);
+			if (PeerSet.size() >= KALPHA_REQUESTS)
+			{
+				return;
+			}
+		}
+		for (int32_t Cur = Distance - 1; Cur >= 0; --Cur)
+		{
+			m_VecKBucket[Cur].get_node(Key, PeerSet);
+			if (PeerSet.size() >= KALPHA_REQUESTS)
+			{
+				return;
+			}
 		}
 	}
 }

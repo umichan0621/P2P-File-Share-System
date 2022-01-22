@@ -93,6 +93,7 @@ namespace net
 		//断开连接
 		if (DO_DISCONNECT == Res)
 		{
+			g_pSessionManager->disconnect(SessionId);   
 			on_disconnect(SessionId);
 		}
 	}

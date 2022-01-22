@@ -317,13 +317,11 @@ namespace net
 						//新的连接
 						if (0 == SessionId)
 						{
-							LOG_ERROR << "new";
 							//加入任务队列，内部会回收之前分配的资源
 							m_pThreadPool->add_task(std::bind(&NetReceiverLinux::_gateway, this, PeerAddr, pBuf, static_cast<uint16_t>(RecvLen)));
 						}
 						else
 						{
-							LOG_ERROR << "recv "<< SessionId;
 							//加入任务队列，内部会回收之前分配的资源
 							m_pThreadPool->add_task(std::bind(&NetReceiverLinux::_recv, this, SessionId, pBuf, static_cast<uint16_t>(RecvLen)));
 						}

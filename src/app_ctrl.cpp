@@ -18,6 +18,7 @@
 #include <iostream>
 #define CONNECT_SIGNAL(_OBJ,_SIGNAL,_FUNC)  connect(_OBJ, &_SIGNAL, this, _FUNC)
 
+using namespace std::chrono;
 #ifdef _DEBUG
 static const char* DATA_BASE_PATH = "../test_debug.db";
 #else
@@ -61,9 +62,9 @@ AppCtrl::AppCtrl() :
 	m_pMoudleDataBase(new MoudleDataBase()),
 	m_pMoudleHandler(new MoudleHandler()),
 	m_pThreadPool(new base::ThreadPool()),
-	m_UnusedFileSeq(0){}
+	m_UnusedFileSeq(0) {}
 
-AppCtrl::~AppCtrl(){}
+AppCtrl::~AppCtrl() {}
 
 bool AppCtrl::init()
 {
@@ -116,7 +117,7 @@ bool AppCtrl::init()
 	//获取Socket描述符
 	m_pMoudleNet->listen_fd(ListenFd, ListenFd6, ListenFdNAT);
 	//初始化主动发送的Peer模块
-	g_pSessionManager->init( ListenFd, ListenFd6, ListenFdNAT);
+	g_pSessionManager->init(ListenFd, ListenFd6, ListenFdNAT);
 	//获取还没使用过的最小FileSeq
 	m_UnusedFileSeq = m_pMoudleDataBase->select_unused_file_seq();
 	//初始化信号和槽
@@ -134,7 +135,6 @@ bool AppCtrl::init()
 	return true;
 }
 
-
 void AppCtrl::start()
 {
 	int x;
@@ -144,7 +144,9 @@ void AppCtrl::start()
 	//const char* p = "121.5.179.213";
 	uint16_t Session = g_pSessionManager->connect_tracker(p, 42543);
 	std::cin >> x;
-	m_pThreadPool->add_task(std::bind(&AppCtrl::thread_loop_search, this));
+	//m_pThreadPool->add_task(std::bind(&AppCtrl::thread_loop_search, this));
+	////启动循环下载线程
+	//m_pThreadPool->add_task(std::bind(&AppCtrl::thread_loop_download, this));
 	m_pMoudleGui->show();
 
 #else//客户端
@@ -258,8 +260,8 @@ void AppCtrl::init_slots()
 
 void AppCtrl::init_file()
 {
-	uint64_t FileSize;
-	base::SHA1 SHA1Struct;
+	uint64_t FileSize=0;
+	base::SHA1 SHA1Struct = { 0 };
 	std::string strSHA1;
 	std::string strFilePath, strFileName;
 	std::vector<int32_t> VecFileSeq;
@@ -271,23 +273,22 @@ void AppCtrl::init_file()
 		for (auto& FileSeq : VecFileSeq)
 		{
 			m_pMoudleDataBase->select_file_info(FileSeq, strSHA1);
-			base::sha1_parse(strSHA1, SHA1Struct);
+			//base::sha1_parse(strSHA1, SHA1Struct);
 			m_pMoudleDataBase->select_file_info(FileSeq, strFilePath, strFileName, FileSize);
 			//载入文件
 			file::FileCtrlIncmpl* pFileCtrl = new file::FileCtrlIncmpl();
 			bool bRes = pFileCtrl->init(base::utf8_to_string(strFilePath), FileSize);
-			pFileCtrl->set_file_seq(FileSeq);
-			pFileCtrl->set_sha1(SHA1Struct);
 			if (false == bRes)
 			{
-				delete pFileCtrl;
+				//delete pFileCtrl;
 				//删除.ctrl文件
 				//提示客户端当前的错误，让客户端决定是否删除文件
 				//
-
 			}
 			else
 			{
+				pFileCtrl->set_file_seq(FileSeq);
+				pFileCtrl->set_sha1(SHA1Struct);
 				g_pFileManager->add_download_file(pFileCtrl);
 				g_pFileManager->refresh_download_list();
 				//加入PartnerTable
@@ -429,73 +430,99 @@ void AppCtrl::open_folder(int32_t FileSeq)
 void AppCtrl::thread_loop_download()
 {
 	file::FileCtrl FileCtrl;
-	uint64_t LastRefreshTime = base::now_milli()-500;
+	file::FileCtrlIncmpl* pDownloadFile;
+	uint64_t FragmentStart;
+	base::SHA1 FileSHA1;
+	std::vector<uint16_t> PartnerList;
+	uint64_t LastRefreshTime = base::now_milli() - PROGRESS_REFRESH_FREQUENCY;
+	uint32_t BaseSleepTime = (1000 * 1000) >> 5;
+	//构造发送的数据包头部
 	char DLReqBuf[30] = { 0 };
 	create_header(DLReqBuf, PROTOCOL_FILE_FRAGMENT_REQ);
+	high_resolution_clock::time_point WakeUpTime = high_resolution_clock::now();
 	for (;;)
 	{
-		if (base::now_milli() - LastRefreshTime >= 500)
-		{
-			LastRefreshTime = base::now_milli();
-			//更新进度
-			std::vector<file::DownloadStatus> VecStatus;
-			g_pFileManager->download_status(VecStatus);
-			for (auto& Status : VecStatus)
+		{//定时刷新各个任务的下载进度
+			if (base::now_milli() - LastRefreshTime >= PROGRESS_REFRESH_FREQUENCY)
 			{
-				emit(update_progress(Status.FileSeq, Status.FileSize, Status.DownloadRate));
+				LastRefreshTime = base::now_milli();
+				std::vector<file::DownloadStatus> VecStatus;
+				g_pFileManager->download_status(VecStatus);
+				for (auto& Status : VecStatus)
+				{
+					emit(update_progress(Status.FileSeq, Status.FileSize, Status.DownloadRate));
+				}
 			}
-		}
-		bool bRes = g_pFileManager->download_task(FileCtrl);
-		//下载列表为空
-		if (false == bRes)
-		{
-			continue;
-			//LOG_ERROR << "empty";
-		}
-		else
-		{
-			//当前的下载任务
-			file::FileCtrlIncmpl* pDownloadFile = (file::FileCtrlIncmpl*)FileCtrl.get();
-			uint64_t FragmentStart;
-			bRes = pDownloadFile->get_task(FragmentStart);
-			//返回false表示当前文件已无需要下载的Fragment，可能已经全部下载完成
-			if (false== bRes)
+		}//定时刷新各个任务的下载进度
+
+		{//获取当前下载的文件和下载的Fragment
+			bool bRes = g_pFileManager->download_task(FileCtrl);
+			//下载列表为空
+			if (false == bRes)
 			{
-				//检查是否真的全部下载完成
-				bRes = pDownloadFile->check_task(FragmentStart);
-				//下载完成，校验SHA1
+				FileCtrl.reset();
+				continue;
+				//LOG_ERROR << "empty";
+			}
+			else
+			{
+				//当前的下载任务
+				pDownloadFile = (file::FileCtrlIncmpl*)FileCtrl.get();
+				bRes = pDownloadFile->get_task(FragmentStart);
+				//返回false表示当前文件已无需要下载的Fragment，可能已经全部下载完成
 				if (false == bRes)
 				{
-					int32_t FileSeq = pDownloadFile->file_seq();
-					//从下载队列移除
-					bool bRes = g_pFileManager->check_download_file(FileSeq);
-					if (true == bRes)
+					//检查是否真的全部下载完成
+					bRes = pDownloadFile->check_task(FragmentStart);
+					//下载完成，校验SHA1
+					if (false == bRes)
 					{
-						//校验任务耗时长，交给其他线程处理
-						m_pThreadPool->add_task(
-							std::bind(&AppCtrl::sha1_check_thread, this, FileCtrl));
-						continue;
+						int32_t FileSeq = pDownloadFile->file_seq();
+						//从下载队列移除
+						bool bRes = g_pFileManager->check_download_file(FileSeq);
+						if (true == bRes)
+						{
+							//校验任务耗时长，交给其他线程处理
+							m_pThreadPool->add_task(std::bind(
+								&AppCtrl::sha1_check_thread, this, FileCtrl));
+							FileCtrl.reset();
+							continue;
+						}
 					}
 				}
 			}
-			//获取下载任务并向Peer请求
-			{
-				//获取当前下载文件的必要信息
-				base::SHA1 SHA1Struct;
-				pDownloadFile->full_sha1(SHA1Struct);
-				std::string strSHA1;
-				base::sha1_value(SHA1Struct, strSHA1);
-				//LOG_ERROR << strSHA1;
-				//写入文件SHA1值和FragmentStart
-				memcpy(&DLReqBuf[2], &SHA1Struct, 20);
-				memcpy(&DLReqBuf[22], &FragmentStart, 8);
-				net::Session* pCurSession=g_pSessionManager->session(1);
-				pCurSession->send_reliable(DLReqBuf, 30);
-			}
-		}
+		}//获取当前下载的文件和下载的Fragment
 
-		base::delay_micro(10 * 1000);
-		FileCtrl.reset();
+		{//获取下载任务并向Peer请求
+			pDownloadFile->full_sha1(FileSHA1);
+			//写入文件SHA1值和FragmentStart
+			memcpy(&DLReqBuf[2], &FileSHA1, 20);
+			memcpy(&DLReqBuf[22], &FragmentStart, 8);
+			PartnerList.clear();
+
+			g_pPartnerTable->search_cid(FileSHA1, PartnerList);
+			if (true == PartnerList.empty())
+			{
+				FileCtrl.reset();
+				continue;
+			}
+			int32_t RanPos = rand() % PartnerList.size();
+			for (int32_t i = 0; i < PartnerList.size(); ++i)
+			{
+				int32_t Pos=(RanPos+i)% PartnerList.size();
+				uint16_t SessionId = PartnerList[Pos];
+				net::Session* pCurSession = g_pSessionManager->session(SessionId);
+				if (nullptr != pCurSession)
+				{
+					pCurSession->send_reliable(DLReqBuf, 30);
+					FileCtrl.reset();
+					break;
+				}
+			}
+		}//获取下载任务并向Peer请求
+		
+		WakeUpTime+= microseconds(BaseSleepTime / DOWNLOAD_RATE);
+		std::this_thread::sleep_until(WakeUpTime);
 	}
 }
 
@@ -523,7 +550,7 @@ void AppCtrl::thread_loop_search()
 			}
 			int32_t Pos = 2 + KLEN_KEY;
 			//获取3个CID，如果重复说明总的CID不足3个
-			std::unordered_set<base::SHA1, base::SHA1HashFunc,base::SHA1EqualFunc> CIDSet;
+			std::unordered_set<base::SHA1, base::SHA1HashFunc, base::SHA1EqualFunc> CIDSet;
 			base::SHA1 CID = { 0 };
 			for (int32_t i = 0; i < 3; ++i)
 			{
@@ -549,7 +576,7 @@ void AppCtrl::thread_loop_search()
 
 void AppCtrl::sha1_check_thread(file::FileCtrl FileCtrl)
 {
-	base::SHA1 ActrualSHA1Struct,SHA1Struct;
+	base::SHA1 ActrualSHA1Struct, SHA1Struct;
 	FileCtrl->sha1(SHA1Struct);
 	FileCtrl->full_sha1(ActrualSHA1Struct);
 	//校验SHA1无问题
@@ -604,7 +631,7 @@ bool AppCtrl::try_add_download_file(std::string& strLink, std::string& strPath)
 	}
 	else
 	{
-		FileName= strSHA1;
+		FileName = strSHA1;
 	}
 	//创建本地文件
 	file::FileCtrlIncmpl* pFileCtrl = new file::FileCtrlIncmpl();
@@ -630,7 +657,7 @@ bool AppCtrl::try_add_download_file(std::string& strLink, std::string& strPath)
 		pFileCtrl->set_sha1(SHA1Struct);
 		//数据库持久化
 		m_pMoudleDataBase->insert_file_info(FileSeq, strSHA1, STATUS_DOWNLOAD, strFilePath, FileSize);
-		m_pMoudleDataBase->update_file_info(FileSeq, FileName,"");
+		m_pMoudleDataBase->update_file_info(FileSeq, FileName, "");
 		g_pFileManager->add_download_file(pFileCtrl);
 		g_pFileManager->refresh_download_list();
 		//GUI显示
@@ -653,7 +680,7 @@ void AppCtrl::thread_add_share_file(std::string& strRemark, std::string& strPath
 	base::SHA1 SHA1Struct;
 	std::string strSHA1;
 	pFileCtrl->sha1(SHA1Struct);
-	base::sha1_value(SHA1Struct,strSHA1);
+	base::sha1_value(SHA1Struct, strSHA1);
 	LOG_ERROR << strSHA1;
 	int32_t FileSeq = m_pMoudleDataBase->select_file_seq(strSHA1);
 	//当前MD5的文件已在数据库中

@@ -13,14 +13,14 @@ namespace handler
 		{
 			return true;
 		}
+		//读取超时次数
+		uint8_t TimeoutCount = pCurSession->timeout();
 		//当前连接断开，终止定时器
 		if (SessionStatus::STATUS_CONNECT_COMPLETE != pCurSession->status())
 		{
 			return true;
 		}
-		//读取超时次数
-		uint8_t TimeoutCount = pCurSession->timeout();
-		//LOG_TRACE << "TIME OUT " << TimeoutCount;
+
 		if (3 == TimeoutCount)
 		{
 			//断开连接
