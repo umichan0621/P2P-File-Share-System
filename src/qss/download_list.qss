@@ -225,27 +225,39 @@ QPushButton[ToolBarButton='start'],[ToolBarButton='pause'],[ToolBarButton='close
 
 QPushButton[ToolBarButton='start']
 {
-	background-image:url(image/start);
+	margin-top:3px;
+	margin-bottom:3px;
+	image:url(image/start.svg);
 }
 QPushButton[ToolBarButton='pause']
 {
-	background-image:url(image/pause);
+	margin-left:6px;
+	margin-right:6px;
+	image:url(image/pause.svg);
 }
 QPushButton[ToolBarButton='close']
 {
-	background-image:url(image/close);
+	margin-top:3px;
+	margin-bottom:3px;
+	image:url(image/close.svg);
 }
 QPushButton[ToolBarButton='folder']
 {
-	background-image:url(image/folder);
+	margin-top:4px;
+	margin-bottom:4px;
+	image:url(image/folder.svg);
 }
 QPushButton[ToolBarButton='link']
 {
-	background-image:url(image/link);
+	margin-top:4px;
+	margin-bottom:4px;
+	image:url(image/link.svg);
 }
 QPushButton[ToolBarButton='info']
 {
-	background-image:url(image/info);
+	margin-top:3px;
+	margin-bottom:3px;
+	image:url(image/info.svg);
 }
 /*工具栏按钮*/
 /*QListWidget的组件QListWidgetItem中Widget的样式*/

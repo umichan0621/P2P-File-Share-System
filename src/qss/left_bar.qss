@@ -1,12 +1,40 @@
 QPushButton
 {
 	background-color:transparent;
-	border-image:url(IMAGE_PATH);
 }
 
 QPushButton:hover
 {
-
 	border-radius:15px;
 	background-color:#515151;
+}
+
+QPushButton[Type='my_file']
+{
+	image:url(image/home.svg);
+}
+
+QPushButton[Type='download']
+{
+	image:url(image/download.svg);
+}
+
+QPushButton[Type='share']
+{
+	image:url(image/upload.svg);
+}
+
+QPushButton[Type='add']
+{
+	image:url(image/add.svg);
+}
+
+QPushButton[Type='setting']
+{
+	image:url(image/setting.svg);
+}
+
+QPushButton[Type='about']
+{
+	image:url(image/about.svg);
 }

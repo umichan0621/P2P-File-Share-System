@@ -15,7 +15,7 @@ namespace gui
 		Q_OBJECT
 	public:
 		LeftBarButton(QWidget* Parent = Q_NULLPTR);
-		void init(const QString& ImagePath);
+		void init(const QString& qssStyle, const QString& strType);
 	};
 
 	class LeftBar : public QWidget
@@ -23,10 +23,8 @@ namespace gui
 		Q_OBJECT
 	public:
 		LeftBar(QWidget* Parent = Q_NULLPTR);
-	private:
-		void init();
 	public:
-		LeftBarButton* m_pHome;
+		LeftBarButton* m_pMyFile;
 		LeftBarButton* m_pDownload;
 		LeftBarButton* m_pShare;
 		LeftBarButton* m_pAdd;

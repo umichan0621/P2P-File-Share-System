@@ -13,8 +13,10 @@ namespace gui
 		m_pTopBar(new TopBar(this)),
 		m_pLeftBar(new LeftBar(this)),
 		m_pAddDialog(new AddDialog(this)),
+		m_pMyFile(new MyFile(this)),
 		m_pDownloadList(new DownloadList(this)),
 		m_pShareTree(new ShareTree(this)),
+		m_CurPage(PAGE_NULL),
 		m_bIsMax(false),
 		m_strStyle("dark"){}
 
@@ -42,16 +44,18 @@ namespace gui
 		setMinimumHeight(440);
 		resize(1280, 720);
 		init_slots();
-		set_style();
 		m_pDownloadList->hide();
 		m_pShareTree->hide();
 		m_pAddDialog->hide();
-		m_CurPage = PAGE_DOWNLOAD;
-		m_pDownloadList->show();
+		m_pMyFile->show();
+		m_CurPage = PAGE_MY_FILE;
+		m_pDownloadList->hide();
 		//读取样式表
 		QFile Background("qss/main_widget.qss");
 		Background.open(QFile::ReadOnly);
 		setStyleSheet(Background.readAll());
+		set_style();
+
 	}
 
 	void MainWidget::init_slots()
@@ -84,6 +88,18 @@ namespace gui
 				close(); 
 			});
 		//左侧按钮
+		//切换到Home页面
+		CONNECT_BUTTON(m_pLeftBar->m_pMyFile, [&]()
+			{
+				if (PAGE_MY_FILE != m_CurPage)
+				{
+					m_pMyFile->show();
+					m_pDownloadList->hide();
+					m_pShareTree->hide();
+					m_CurPage = PAGE_MY_FILE;
+				}
+
+			});
 		//切换到Download页面
 		CONNECT_BUTTON(m_pLeftBar->m_pDownload, [&]() 
 			{
@@ -91,6 +107,7 @@ namespace gui
 				{
 					m_pDownloadList->show();
 					m_pShareTree->hide();
+					m_pMyFile->hide();
 					m_CurPage = PAGE_DOWNLOAD;
 				}
 
@@ -102,6 +119,7 @@ namespace gui
 				{
 					m_pShareTree->show();
 					m_pDownloadList->hide();
+					m_pMyFile->hide();
 					m_CurPage = PAGE_SHARE;
 				}
 			});
@@ -142,18 +160,15 @@ namespace gui
 		{
 			m_strStyle = "light";
 		}
-		this->setProperty("Style", m_strStyle);
-		LOG_ERROR << m_strStyle.toStdString();
+		setProperty("Style", m_strStyle);
 		style()->unpolish(this);
-
 		style()->polish(this);
+
 		m_pTopBar->set_style(m_strStyle);
+		m_pMyFile->set_style(m_strStyle, m_strLanguage);
 		m_pDownloadList->set_style(m_strStyle, m_strLanguage);
 		m_pShareTree->set_style(m_strStyle, m_strLanguage);
 		m_pAddDialog->set_style(m_strStyle, m_strLanguage);
-
-		
-		
 		
 		update();
 	}
@@ -171,6 +186,11 @@ namespace gui
 	ShareTree* MainWidget::share_tree()
 	{
 		return m_pShareTree;
+	}
+
+	MyFile* MainWidget::my_file()
+	{
+		return m_pMyFile;
 	}
 
 	//Event override
@@ -195,6 +215,7 @@ namespace gui
 	{
 		m_pTopBar->setGeometry(width() - 135, 0, 135, 32);
 		m_pLeftBar->setGeometry(14, 32, 30, height() - 52);
+		m_pMyFile->setGeometry(106, 40, width() - 126, height() - 50);
 		m_pDownloadList->setGeometry(106, 40, width() - 126, height() - 50);
 		m_pShareTree->setGeometry(106, 40, width() - 126, height() - 50);
 	}

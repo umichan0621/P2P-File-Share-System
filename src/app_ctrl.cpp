@@ -59,10 +59,9 @@ static bool set_clip_board(const std::string& strVal)
 AppCtrl::AppCtrl() :
 	m_pMoudleGui(new MoudleGui()),
 	m_pMoudleNet(new MoudleNet()),
-	m_pMoudleDataBase(new MoudleDataBase()),
 	m_pMoudleHandler(new MoudleHandler()),
-	m_pThreadPool(new base::ThreadPool()),
-	m_UnusedFileSeq(0) {}
+	m_pThreadPool(new base::ThreadPool())
+{}
 
 AppCtrl::~AppCtrl() {}
 
@@ -71,7 +70,7 @@ bool AppCtrl::init()
 	//根据时间生成随机种子
 	srand(base::now_milli());
 	//初始化数据库
-	if (false == m_pMoudleDataBase->open(DATA_BASE_PATH))
+	if (false == g_pDataBaseManager->open(DATA_BASE_PATH))
 	{
 		return false;
 	}
@@ -118,8 +117,6 @@ bool AppCtrl::init()
 	m_pMoudleNet->listen_fd(ListenFd, ListenFd6, ListenFdNAT);
 	//初始化主动发送的Peer模块
 	g_pSessionManager->init(ListenFd, ListenFd6, ListenFdNAT);
-	//获取还没使用过的最小FileSeq
-	m_UnusedFileSeq = m_pMoudleDataBase->select_unused_file_seq();
 	//初始化信号和槽
 	init_slots();
 	//设置同时最大下载数
@@ -153,12 +150,12 @@ void AppCtrl::start()
 	//const char* p = "192.168.50.13";
 
 	//const char* p = "127.0.0.1";
-	const char* p = "121.5.179.213";
-	uint16_t Session = g_pSessionManager->connect_tracker(p, 2342);
+	//const char* p = "121.5.179.213";
+	//uint16_t Session = g_pSessionManager->connect_tracker(p, 2342);
 	//启动循环下载线程
 	//m_pThreadPool->add_task(std::bind(&AppCtrl::download_thread, this));
-	std::cin >> x;
-	m_pThreadPool->add_task(std::bind(&AppCtrl::thread_loop_search, this));
+	//std::cin >> x;
+	//m_pThreadPool->add_task(std::bind(&AppCtrl::thread_loop_search, this));
 	m_pMoudleGui->show();
 
 #endif
@@ -174,28 +171,28 @@ void AppCtrl::init_slots()
 		[&](int32_t FileSeq)
 		{
 			int8_t Status = STATUS_DOWNLOAD;
-			m_pMoudleDataBase->update_file_info(FileSeq, Status);
+			g_pDataBaseManager->update_file_info(FileSeq, Status);
 		});
 	//暂停下载文件的信号
 	CONNECT_SIGNAL(m_pMoudleGui->download_list(), gui::DownloadList::pause_file,
 		[&](int32_t FileSeq)
 		{
 			int8_t Status = STATUS_PAUSE;
-			m_pMoudleDataBase->update_file_info(FileSeq, Status);
+			g_pDataBaseManager->update_file_info(FileSeq, Status);
 
 		});
 	//删除下载文件的信号
 	CONNECT_SIGNAL(m_pMoudleGui->download_list(), gui::DownloadList::delete_file,
 		[&](int32_t FileSeq)
 		{
-			m_pMoudleDataBase->delete_file_info(FileSeq);
+			g_pDataBaseManager->delete_file_info(FileSeq);
 			g_pFileManager->kill_download_file(FileSeq);
 		});
 	//删除分享文件的信号
 	CONNECT_SIGNAL(m_pMoudleGui->share_tree(), gui::ShareTree::delete_file,
 		[&](int32_t FileSeq)
 		{
-			m_pMoudleDataBase->delete_file_info(FileSeq);
+			g_pDataBaseManager->delete_file_info(FileSeq);
 			g_pFileManager->kill_share_file(FileSeq);
 		});
 	//获取下载文件分享链接的信号
@@ -247,7 +244,9 @@ void AppCtrl::init_slots()
 				strRemark.toStdString(),
 				strPath.toStdString()));
 		});
-
+	//发送向文件管理系统添加文件/文件夹的信号
+	connect(this, &AppCtrl::add_file, m_pMoudleGui->my_file(), &gui::MyFile::add_file);
+	//发送新建分享文件的信号
 	connect(this, &AppCtrl::new_share, m_pMoudleGui->share_tree(), &gui::ShareTree::new_share);
 	//发送新建下载任务的信号
 	connect(this, &AppCtrl::new_download, m_pMoudleGui->download_list(), &gui::DownloadList::new_download);
@@ -255,7 +254,6 @@ void AppCtrl::init_slots()
 	connect(this, &AppCtrl::update_progress, m_pMoudleGui->download_list(), &gui::DownloadList::update_progress);
 	//发送文件下载完成的信号
 	connect(this, &AppCtrl::file_complete, m_pMoudleGui->download_list(), &gui::DownloadList::file_complete);
-
 }
 
 void AppCtrl::init_file()
@@ -266,20 +264,21 @@ void AppCtrl::init_file()
 	std::string strFilePath, strFileName;
 	std::vector<int32_t> VecFileSeq;
 
-	//加载下载中文件
-	{
+	{//加载下载中文件
 		VecFileSeq.clear();
-		m_pMoudleDataBase->select_file_info(VecFileSeq, STATUS_DOWNLOAD);
+		g_pDataBaseManager->select_file_info(VecFileSeq, STATUS_DOWNLOAD);
 		for (auto& FileSeq : VecFileSeq)
 		{
-			m_pMoudleDataBase->select_file_info(FileSeq, strSHA1);
+			g_pDataBaseManager->select_file_info(FileSeq, strSHA1);
 			//base::sha1_parse(strSHA1, SHA1Struct);
-			m_pMoudleDataBase->select_file_info(FileSeq, strFilePath, strFileName, FileSize);
+			g_pDataBaseManager->select_file_info(FileSeq, strFilePath, strFileName, FileSize);
 			//载入文件
 			file::FileCtrlIncmpl* pFileCtrl = new file::FileCtrlIncmpl();
 			bool bRes = pFileCtrl->init(base::utf8_to_string(strFilePath), FileSize);
 			if (false == bRes)
 			{
+				LOG_ERROR << "ADD FAIL";
+
 				//delete pFileCtrl;
 				//删除.ctrl文件
 				//提示客户端当前的错误，让客户端决定是否删除文件
@@ -287,6 +286,7 @@ void AppCtrl::init_file()
 			}
 			else
 			{
+				LOG_ERROR << "ADD OK";
 				pFileCtrl->set_file_seq(FileSeq);
 				pFileCtrl->set_sha1(SHA1Struct);
 				g_pFileManager->add_download_file(pFileCtrl);
@@ -294,46 +294,47 @@ void AppCtrl::init_file()
 				//加入PartnerTable
 				g_pPartnerTable->add_cid(SHA1Struct);
 				//GUI显示
-				emit(new_download(FileSeq, STATUS_DOWNLOAD, FileSize, QString::fromStdString(strFileName)));
+				emit(new_download(FileSeq));
 			}
 		}
-	}
-	//加载暂停下载的文件
-	{
+	}//加载下载中文件
+	
+	{//加载暂停下载的文件
 		VecFileSeq.clear();
-		m_pMoudleDataBase->select_file_info(VecFileSeq, STATUS_PAUSE);
+		g_pDataBaseManager->select_file_info(VecFileSeq, STATUS_PAUSE);
 		for (auto& FileSeq : VecFileSeq)
 		{
-			m_pMoudleDataBase->select_file_info(FileSeq, strSHA1);
+			g_pDataBaseManager->select_file_info(FileSeq, strSHA1);
 			base::sha1_parse(strSHA1, SHA1Struct);
 			//GUI显示
-			m_pMoudleDataBase->select_file_info(FileSeq, strFilePath, strFileName, FileSize);
-			emit(new_download(FileSeq, STATUS_PAUSE, FileSize, QString::fromStdString(strFileName)));
+			g_pDataBaseManager->select_file_info(FileSeq, strFilePath, strFileName, FileSize);
+			emit(new_download(FileSeq));
 		}
-	}
-	//加载下载完成的文件
-	{
+	}//加载暂停下载的文件
+
+	
+	{//加载下载完成的文件
 		VecFileSeq.clear();
-		m_pMoudleDataBase->select_file_info(VecFileSeq, STATUS_COMPLETE);
+		g_pDataBaseManager->select_file_info(VecFileSeq, STATUS_COMPLETE);
 		for (auto& FileSeq : VecFileSeq)
 		{
-			m_pMoudleDataBase->select_file_info(FileSeq, strSHA1);
+			g_pDataBaseManager->select_file_info(FileSeq, strSHA1);
 			base::sha1_parse(strSHA1, SHA1Struct);
 
 			//GUI显示
-			m_pMoudleDataBase->select_file_info(FileSeq, strFilePath, strFileName, FileSize);
-			emit(new_download(FileSeq, STATUS_COMPLETE, FileSize, QString::fromStdString(strFileName)));
+			g_pDataBaseManager->select_file_info(FileSeq, strFilePath, strFileName, FileSize);
+			emit(new_download(FileSeq));
 		}
-	}
-	//加载分享的文件
-	{
+	}//加载下载完成的文件
+
+	
+	{//加载分享的文件
 		VecFileSeq.clear();
-		m_pMoudleDataBase->select_file_info(VecFileSeq, STATUS_SHARE);
+		g_pDataBaseManager->select_file_info(VecFileSeq, STATUS_SHARE);
 		for (auto& FileSeq : VecFileSeq)
 		{
-			m_pMoudleDataBase->select_file_info(FileSeq, strSHA1);
-			base::sha1_parse(strSHA1, SHA1Struct);
-			m_pMoudleDataBase->select_file_info(FileSeq, strFilePath, strFileName, FileSize);
+			g_pDataBaseManager->select_file_info(FileSeq, strSHA1);
+			g_pDataBaseManager->select_file_info(FileSeq, strFilePath, strFileName, FileSize);
 			//载入文件
 			file::FileCtrlCmpl* pFileCtrl = new file::FileCtrlCmpl();
 			bool bRes = pFileCtrl->init(base::utf8_to_string(strFilePath), FileSize);
@@ -352,16 +353,26 @@ void AppCtrl::init_file()
 				g_pFileManager->add_share_file(pFileCtrl);
 				//加入PartnerTable
 				g_pPartnerTable->add_cid(SHA1Struct);
-				//GUI显示
-				std::string CreateTime, FileName, FileRemark;
-				uint64_t UploadData;
-				bool bRes = m_pMoudleDataBase->select_create_time(FileSeq, CreateTime);
-				bRes = m_pMoudleDataBase->select_file_info(FileSeq, FileName, UploadData, FileRemark);
-				emit(new_share(FileSeq, QString::fromStdString(FileName),
-					QString::fromStdString(FileRemark), QString::fromStdString(CreateTime), UploadData));
+				
+				{//GUI显示
+					//发送向文件管理系统添加文件/文件夹的信号
+					emit(add_file(FileSeq));
+					//发送新建分享文件的信号
+					emit(new_share(FileSeq));
+				}//GUI显示
 			}
 		}
-	}
+	}//加载分享的文件
+
+	{//加载文件夹
+		VecFileSeq.clear();
+		g_pDataBaseManager->select_file_info(VecFileSeq, STATUS_FOLDER);
+		for (auto& FileSeq : VecFileSeq)
+		{
+			//GUI显示
+			emit(add_file(FileSeq));
+		}
+	}//加载文件夹
 }
 
 void AppCtrl::init_config()
@@ -379,8 +390,8 @@ void AppCtrl::get_link(int32_t FileSeq)
 	base::SHA1 SHA1Struct;
 	std::string strSHA1;
 	uint64_t FileSize;
-	m_pMoudleDataBase->select_file_info(FileSeq, strSHA1);
-	m_pMoudleDataBase->select_file_size(FileSeq, FileSize);
+	g_pDataBaseManager->select_file_info(FileSeq, strSHA1);
+	g_pDataBaseManager->select_file_size(FileSeq, FileSize);
 	base::sha1_parse(strSHA1, SHA1Struct);
 	char Buf[30];
 	memcpy(Buf, &SHA1Struct, 20);
@@ -396,7 +407,7 @@ void AppCtrl::get_link(int32_t FileSeq)
 	std::string strLink = Des;
 	LOG_ERROR << strLink;
 	std::string FileName;
-	m_pMoudleDataBase->select_file_name(FileSeq, FileName);
+	g_pDataBaseManager->select_file_name(FileSeq, FileName);
 	strLink += base::utf8_to_string(FileName);
 	LOG_ERROR << strLink;
 	if (false == set_clip_board(strLink))
@@ -409,7 +420,7 @@ void AppCtrl::open_folder(int32_t FileSeq)
 {
 	LOG_ERROR << "open_folder";
 	std::string strPath;
-	m_pMoudleDataBase->select_file_path(FileSeq, strPath);
+	g_pDataBaseManager->select_file_path(FileSeq, strPath);
 	QString qstrPath = QString::fromStdString(strPath);
 
 	strPath = base::utf8_to_string(strPath);
@@ -539,7 +550,7 @@ void AppCtrl::thread_loop_search()
 	base::sha1_value(g_pRoutingTable->pid(), str);
 	for (;;)
 	{
-		uint16_t SessionId = g_pPeerManager->search_pop();
+		uint16_t SessionId = g_pPeerManager->register_pop();
 
 		if (ERROR_SESSION_ID != SessionId)
 		{
@@ -613,7 +624,7 @@ bool AppCtrl::try_add_download_file(std::string& strLink, std::string& strPath)
 
 	LOG_ERROR << strSHA1;
 	LOG_ERROR << FileSize;
-	int32_t FileSeq = m_pMoudleDataBase->select_file_seq(strSHA1);
+	int32_t FileSeq = g_pDataBaseManager->select_file_seq(strSHA1);
 
 	//当前MD5的文件已在数据库中
 	if (-1 != FileSeq)
@@ -621,9 +632,9 @@ bool AppCtrl::try_add_download_file(std::string& strLink, std::string& strPath)
 		LOG_TRACE << "[Download Task]" << strSHA1 << " has been recorded, FileSeq = " << FileSeq;
 		return false;
 	}
-	FileSeq = m_UnusedFileSeq;
+	
+	FileSeq = g_pDataBaseManager->file_seq();
 
-	++m_UnusedFileSeq;
 	std::string FileName;
 	if (strLink.size() > 40)
 	{
@@ -656,12 +667,16 @@ bool AppCtrl::try_add_download_file(std::string& strLink, std::string& strPath)
 	{
 		pFileCtrl->set_sha1(SHA1Struct);
 		//数据库持久化
-		m_pMoudleDataBase->insert_file_info(FileSeq, strSHA1, STATUS_DOWNLOAD, strFilePath, FileSize);
-		m_pMoudleDataBase->update_file_info(FileSeq, FileName, "");
+		g_pDataBaseManager->insert_file_info(FileSeq, strSHA1, STATUS_DOWNLOAD, strFilePath, FileSize);
+		g_pDataBaseManager->update_file_info(FileSeq, FileName, "");
 		g_pFileManager->add_download_file(pFileCtrl);
 		g_pFileManager->refresh_download_list();
-		//GUI显示
-		emit(new_download(FileSeq, STATUS_DOWNLOAD, FileSize, QString::fromStdString(FileName)));
+		
+		{//GUI显示
+			emit(add_file(FileSeq));
+			emit(new_download(FileSeq));
+		}//GUI显示
+		
 	}
 	return true;
 }
@@ -682,7 +697,7 @@ void AppCtrl::thread_add_share_file(std::string& strRemark, std::string& strPath
 	pFileCtrl->sha1(SHA1Struct);
 	base::sha1_value(SHA1Struct, strSHA1);
 	LOG_ERROR << strSHA1;
-	int32_t FileSeq = m_pMoudleDataBase->select_file_seq(strSHA1);
+	int32_t FileSeq = g_pDataBaseManager->select_file_seq(strSHA1);
 	//当前MD5的文件已在数据库中
 	if (-1 != FileSeq)
 	{
@@ -690,9 +705,9 @@ void AppCtrl::thread_add_share_file(std::string& strRemark, std::string& strPath
 		return;
 	}
 	//获取可用的FileSeq
-	FileSeq = m_UnusedFileSeq;
-	++m_UnusedFileSeq;
-	bool bRes = m_pMoudleDataBase->insert_file_info(FileSeq, strSHA1, STATUS_SHARE, strPath, FileSize);
+	FileSeq = g_pDataBaseManager->file_seq();
+
+	bool bRes = g_pDataBaseManager->insert_file_info(FileSeq, strSHA1, STATUS_SHARE, strPath, FileSize);
 	if (false == bRes)
 	{
 		//LOG_TRACE <<
@@ -700,12 +715,15 @@ void AppCtrl::thread_add_share_file(std::string& strRemark, std::string& strPath
 	}
 
 	std::string FileName = base::string_to_utf8(pFileCtrl->file_name());
-	bRes = m_pMoudleDataBase->update_file_info(FileSeq, FileName, strRemark);
-	std::string CreateTime;
-	bRes = m_pMoudleDataBase->select_create_time(FileSeq, CreateTime);
-	//GUI显示
-	QString Temp = QString::fromStdString(FileName);
-	emit(new_share(FileSeq, QString::fromStdString(FileName),
-		QString::fromStdString(strRemark), QString::fromStdString(CreateTime), 0));
+	bRes = g_pDataBaseManager->update_file_info(FileSeq, FileName, strRemark);
+	//std::string CreateTime;
+	//bRes = g_pDataBaseManager->select_create_time(FileSeq, CreateTime);
+	
+	//QString Temp = QString::fromStdString(FileName);
+	{//GUI显示
+		emit(add_file(FileSeq));
+		emit(new_share(FileSeq));
+	}//GUI显示
+
 	//加入内存
 }

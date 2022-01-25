@@ -14,7 +14,7 @@ namespace gui
         m_pAddFile(new QPushButton(m_pDialog)),
         m_pAddShare(new QPushButton(m_pDialog)),
         m_pAddPeer(new QPushButton(m_pDialog)),
-        m_pLine(new QFrame(m_pDialog)),
+        m_pLineLow(new QFrame(m_pDialog)),
         m_pBottom(new QWidget(m_pDialog)),
         m_pCancel(new QPushButton(m_pBottom)),
         m_pSubmit(new QPushButton(m_pBottom)),
@@ -40,8 +40,8 @@ namespace gui
     void AddDialog::init()
     {
         //分隔线设置
-        m_pLine->setFrameShape(QFrame::HLine);
-        m_pLine->lower();
+        m_pLineLow->setFrameShape(QFrame::HLine);
+        m_pLineLow->lower();
         //设置按钮
         m_pSubmit->setCursor(QCursor(Qt::PointingHandCursor));
         m_pCancel->setCursor(QCursor(Qt::PointingHandCursor));
@@ -57,7 +57,7 @@ namespace gui
         m_pAddFile->setGeometry(Bounadry, 20, 80, 32);
         m_pAddShare->setGeometry(Bounadry + 80, 20, 80, 32);
         m_pAddPeer->setGeometry(Bounadry + 160, 20, 80, 32);
-        m_pLine->setGeometry(20, 50, 560, 2);
+        m_pLineLow->setGeometry(20, 50, 560, 2);
         //下侧，高度占200-270
         m_pBottom->setGeometry(0, Height - 70, Width, 70);
         m_pCancel->setGeometry(Width - 160, 20, 60, 28);
@@ -89,7 +89,7 @@ namespace gui
         //对话框底部
         m_pBottom->setStyleSheet(StyleTotal);
         //分隔线
-        m_pLine->setStyleSheet(StyleTotal);
+        m_pLineLow->setStyleSheet(StyleTotal);
         //设置取消键
         m_pCancel->setStyleSheet(StyleTotal);
         //设置提交按钮样式
@@ -168,9 +168,9 @@ namespace gui
         m_pBottom->setProperty("Bottom" , Style);
         style()->unpolish(m_pBottom);
         style()->polish(m_pBottom);
-        m_pLine->setProperty("Line" , Style);
-        style()->unpolish(m_pLine);
-        style()->polish(m_pLine);
+        m_pLineLow->setProperty("Line" , Style);
+        style()->unpolish(m_pLineLow);
+        style()->polish(m_pLineLow);
         m_pCancel->setProperty("Cancel" , Style);
         style()->unpolish(m_pCancel);
         style()->polish(m_pCancel);

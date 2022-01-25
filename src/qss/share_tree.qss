@@ -113,32 +113,32 @@ QPushButton:hover
 
 QPushButton[Button='link']
 {
-	background-image:url(image/link);
+	image:url(image/link.svg);
 }
 
 QPushButton[Button='link']:hover
 {
-	background-image:url(image/link_choose);
+	image:url(image/link_choose.svg);
 }
 
 QPushButton[Button='folder']
 {
-	background-image:url(image/folder);
+	image:url(image/folder.svg);
 }
 
 QPushButton[Button='folder']:hover
 {
-	background-image:url(image/folder_choose);
+	image:url(image/folder_choose.svg);
 }
 
 QPushButton[Button='close']
 {
-	background-image:url(image/close);
+	image:url(image/close.svg);
 }
 
 QPushButton[Button='close']:hover
 {
-	background-image:url(image/close_choose);
+	image:url(image/close_choose.svg);
 }
 /*按钮样式*/
 

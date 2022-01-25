@@ -1,0 +1,117 @@
+/*QListWidget相关*/
+
+QListWidget
+{
+    border:none;
+	background-color:transparent;
+}
+QListWidget::item
+{
+    border:none;
+    margin-top:6px;
+}
+
+QListWidget::item:hover[MyFile='light']
+{ 
+    background-color:#e0f2fb;
+}
+
+QListWidget::item:hover[MyFile='dark']
+{ 
+    background-color:#444444;
+}
+
+QListWidget::item::selected[MyFile='light']
+{
+    background-color:#e0f2fb;
+}
+
+QListWidget::item::selected[MyFile='dark']
+{
+    background-color:#444444;
+}
+
+QLabel[FileType='folder']
+{
+    background-color:transparent;
+	image:url('image/folder_my_file.svg');
+}
+
+QLabel[FileType='file']
+{
+    background-color:transparent;
+	image:url('image/file_my_file.svg');
+}
+
+QLabel[FileType='file_offline']
+{
+    background-color:transparent;
+	image:url('image/file_my_file_offline.svg');
+}
+
+QLabel[FileName='light'],[FileName='dark']
+{
+	font-family:"Microsoft YaHei";
+	font-size:13px;
+    margin-left:0px;
+}
+
+QLabel[FileName='light']
+{
+	color:#727272;
+}
+
+QLabel[FileName='dark']
+{
+	color:#ffffff;
+}
+
+QPushButton[Button='next']
+{
+    background-color:transparent;
+    image:url('image/next.svg')
+}
+
+QPushButton:hover[Button='next']
+{ 
+    image:url('image/next_choose.svg')
+}
+
+QPushButton[Button='back']
+{
+    background-color:transparent;
+    image:url('image/back.svg')
+}
+
+QPushButton:hover[Button='back']
+{ 
+    image:url('image/back_choose.svg')
+}
+
+QPushButton[Path='light'],[Path='dark']
+{
+    background-color:transparent;
+    font-family:"Microsoft YaHei";
+	font-size:14px;
+}
+
+QPushButton:hover[Path='light']
+{
+    color:#5b5bfa;
+}
+
+QPushButton:hover[Path='dark']
+{
+    color:#5b5bfa;
+}
+
+QPushButton[Path='light']
+{
+    color:#727272;
+}
+
+QPushButton[Path='dark']
+{
+    color:#ffffff;
+}
+

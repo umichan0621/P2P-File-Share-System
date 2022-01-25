@@ -10,6 +10,7 @@
 #include "ui_add_dialog.h"
 #include "ui_top_bar.h"
 #include "ui_left_bar.h"
+#include "ui_my_file.h"
 #include "ui_download_list.h"
 #include "ui_share_tree.h"
 
@@ -22,7 +23,7 @@ namespace gui
 		enum Page
 		{
 			PAGE_NULL = 0,
-			PAGE_HOME,
+			PAGE_MY_FILE,
 			PAGE_DOWNLOAD,
 			PAGE_SHARE,
 			PAGE_ADD,
@@ -36,6 +37,7 @@ namespace gui
 		AddDialog* add_dialog();
 		DownloadList* download_list();
 		ShareTree* share_tree();
+		MyFile* my_file();
 	private:
 		void init_slots();	//连接各个按钮和槽函数
 		void set_style();
@@ -46,6 +48,7 @@ namespace gui
 		TopBar*				m_pTopBar;
 		LeftBar*			m_pLeftBar;
 		AddDialog*			m_pAddDialog;
+		MyFile*				m_pMyFile;
 		DownloadList*		m_pDownloadList;
 		ShareTree*			m_pShareTree;
 	private:

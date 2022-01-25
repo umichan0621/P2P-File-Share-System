@@ -205,7 +205,7 @@ namespace handler
 			//定时检测超时状态，然后发送心跳包
 			g_pTimer->add_timer(HEARTBEAT_CLOCK, std::bind(heartbeat_probe, SessionId));
 			//连接成功，接下来需要查询PID和CID
-			g_pPeerManager->search_push(SessionId);
+			g_pPeerManager->register_push(SessionId);
 			{//TEST
 				std::string strIP;
 				uint16_t Port;

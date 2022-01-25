@@ -1,23 +1,38 @@
-QPushButton
+QWidget
 {
-	border-style:outset;
-	background-color:transparent;
-	background-position:center; 
-	background-repeat:no-repeat;
-	background-image:url(IMAGE_PATH);
+	padding:0px;
+	border:none;
 }
 
-#TopBar_dark:hover
+QPushButton[Type='min']
 {
-	background-color:#050505;
+	padding:6px;
+	image:url(image/min.svg);
 }
 
-#TopBar_light:hover
+QPushButton[Type='max']
+{
+	padding:8px;
+	image:url(image/max.svg);
+}
+
+QPushButton[Type='close']
+{
+	padding:6px;
+	image:url(image/close.svg);
+}
+
+QPushButton:hover[IsClose='light']
 {
 	background-color:#eeeeee;
 }
 
-#TopBarClose:hover
+QPushButton:hover[IsClose='dark']
+{
+	background-color:#050505;
+}
+
+QPushButton:hover[IsClose='close']
 {
 	background-color:#fd0007;
 }

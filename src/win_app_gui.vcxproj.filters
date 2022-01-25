@@ -104,6 +104,9 @@
     <Filter Include="module_handler\routing">
       <UniqueIdentifier>{a8f9a0cf-9af5-4665-a9c3-daeb38e4fb85}</UniqueIdentifier>
     </Filter>
+    <Filter Include="module_gui\my_file">
+      <UniqueIdentifier>{4cbae119-19ba-4297-8b97-5f0152b6344f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <QtRcc Include="win_app_gui.qrc">
@@ -235,6 +238,18 @@
     </ClCompile>
     <ClCompile Include="module_handler\handler_routing.cpp">
       <Filter>module_handler\routing</Filter>
+    </ClCompile>
+    <ClCompile Include="module_gui\ui_my_file.cpp">
+      <Filter>module_gui\my_file</Filter>
+    </ClCompile>
+    <ClCompile Include="module_gui\ui_file_manager.cpp">
+      <Filter>module_gui\my_file</Filter>
+    </ClCompile>
+    <ClCompile Include="module_gui\ui_list_component.cpp">
+      <Filter>module_gui\my_file</Filter>
+    </ClCompile>
+    <ClCompile Include="module_gui\ui_share_component.cpp">
+      <Filter>module_gui\share</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -396,6 +411,18 @@
     </QtMoc>
     <QtMoc Include="module_gui\ui_top_bar.h">
       <Filter>module_gui\top_bar</Filter>
+    </QtMoc>
+    <QtMoc Include="module_gui\ui_my_file.h">
+      <Filter>module_gui\my_file</Filter>
+    </QtMoc>
+    <QtMoc Include="module_gui\ui_list_component.h">
+      <Filter>module_gui\my_file</Filter>
+    </QtMoc>
+    <QtMoc Include="module_gui\ui_file_manager.h">
+      <Filter>module_gui\my_file</Filter>
+    </QtMoc>
+    <QtMoc Include="module_gui\ui_share_component.h">
+      <Filter>module_gui\share</Filter>
     </QtMoc>
   </ItemGroup>
 </Project>

@@ -4,6 +4,7 @@
 #include <QFile>
 #include <base/config.hpp>
 #include <base/logger/logger.h>
+#include <module_db/database.h>
 #define CONNECT_BUTTON(_BUTTON,_FUNC) connect(_BUTTON, &QPushButton::clicked, this, _FUNC)
 
 namespace gui
@@ -15,7 +16,7 @@ namespace gui
         m_pDownloading = new QPushButton(this);
         m_pPause = new QPushButton(this);
         m_pComplete = new QPushButton(this);
-        m_pLine = new QFrame(this);
+        m_pLineLow = new QFrame(this);
         m_pListWidget = new QListWidget(this);
         init();
     }
@@ -34,8 +35,8 @@ namespace gui
         //设置可多选
         m_pListWidget->setSelectionMode(QAbstractItemView::ContiguousSelection);
         //分隔线设置
-        m_pLine->setFrameShape(QFrame::HLine);
-        m_pLine->lower();
+        m_pLineLow->setFrameShape(QFrame::HLine);
+        m_pLineLow->lower();
         //设置槽函数
         init_slots();
         setStyleSheet("background-color:transparent");
@@ -45,7 +46,7 @@ namespace gui
         //设置List样式
         m_pListWidget->setStyleSheet(QssStyle);
         //分隔线样式
-        m_pLine->setStyleSheet(QssStyle);
+        m_pLineLow->setStyleSheet(QssStyle);
         //设置按钮样式
         m_pPause->setStyleSheet(QssStyle);
         m_pComplete->setStyleSheet(QssStyle);
@@ -125,12 +126,21 @@ namespace gui
             });
         //向Gui添加新的下载任务
         connect(this, &DownloadList::new_download, this, 
-            [&](int32_t FileSeq, uint8_t Status, uint64_t FileSize, const QString& FileName)
+            [&](int32_t FileSeq)
             {
+                LOG_ERROR << "NEW DOWNLOAD";
+                uint8_t Status=0;
+                uint64_t FileSize=0; 
+                std::string FileName;
                 std::unique_lock<std::mutex> Lock(m_DownloadListMutex);
                 //当前文件序号没有被使用
                 if (0==m_DownloadWidgetMap.count(FileSeq))
                 {
+                    bool bRes = g_pDataBaseManager->select_file_info(FileSeq, Status, FileSize, FileName);
+                    if (false == bRes)
+                    {
+                        return;
+                    }
                     //初始化组件
                     DownloadCard* pCurCard = new DownloadCard();
                     pCurCard->init(FileSeq);
@@ -145,8 +155,9 @@ namespace gui
                     init_sub_slots(pCurCard);
                     m_DownloadWidgetMap[FileSeq] = pItem;
                     Lock.unlock();
-                    pCurCard->set_file_info(FileName, FileSize);
+                    pCurCard->set_file_info(QString::fromStdString(FileName), FileSize);
                     pCurCard->set_file_progress(0, 0);
+                    LOG_ERROR << "STATUS = " << Status;
                     pCurCard->set_status(Status);
                 }
             });
@@ -191,6 +202,8 @@ namespace gui
                 QListWidgetItem* pItem = m_DownloadWidgetMap[FileSeq];
                 DownloadCard* pCurWidget = (DownloadCard*)m_pListWidget->itemWidget(pItem);
                 uint8_t CurStatus = pCurWidget->status();
+                LOG_ERROR << "here";
+                m_pListWidget->setItemHidden(pItem, false);
                 //当前任务已完成，但页面不在已完成
                 if (CurStatus!= m_CurChoose)
                 {
@@ -319,7 +332,7 @@ namespace gui
 
     void DownloadList::resizeEvent(QResizeEvent* pEvent)
     {
-        m_pLine->setGeometry(13, 50, width() - 35, 2);
+        m_pLineLow->setGeometry(13, 50, width() - 35, 2);
         m_pListWidget->setGeometry(3, 52, width() - 6, height() - 52);
     }
 }

@@ -15,11 +15,10 @@ namespace gui
 		Q_OBJECT
 	public:
 		TopBarButton(QWidget* Parent = Q_NULLPTR);
-		void init(const std::string& ImagePath, bool bIsClose = false);
-		void set_style(const QString& Style);
+		void init(const std::string& strType);
+		void set_style(const QString& qssStyle, const QString& Style);
 	private:
-		QString		m_ImagePath;
-		bool		m_bIsClose;
+		QString		m_strType;
 	};
 
 	class TopBar : public QWidget
@@ -28,11 +27,10 @@ namespace gui
 	public:
 		TopBar(QWidget* Parent = Q_NULLPTR);
 		void set_style(const QString& Style);
-	private:
-		void init();
 	public:
-		TopBarButton* m_pMin;
-		TopBarButton* m_pMax;
-		TopBarButton* m_pClose;
+		TopBarButton*	m_pMin;
+		TopBarButton*	m_pMax;
+		TopBarButton*	m_pClose;
+		QString			m_qssStyle;
 	};
 }

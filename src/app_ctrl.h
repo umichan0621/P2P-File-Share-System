@@ -19,7 +19,6 @@ class AppCtrl:public QObject
 	Q_OBJECT
 private:
 	typedef gui::MainWidget					MoudleGui;
-	typedef database::DataBaseManager		MoudleDataBase;
 	typedef net::NetReceiver				MoudleNet;
 	typedef handler::HandlerManager			MoudleHandler;
 public:
@@ -57,22 +56,24 @@ private://初始化
 	//结果一致表示下载完成，否则可能有问题
 	void sha1_check_thread(file::FileCtrl FileCtrl);
 signals://信号
+	//向文件管理系统添加一个文件/文件夹
+	void add_file(int32_t FileSeq);
+
 	//新的下载任务
-	void new_download(int32_t FileSeq, uint8_t Status, uint64_t FileSize, const QString& FileName);
+	void new_download(int32_t FileSeq);
+	
 	//新的分享文件
-	void new_share(int32_t FileSeq, const QString& FileName,
-		const QString& Remark, const QString& CreateTime, uint64_t UploadData);
+	void new_share(int32_t FileSeq);
+	
 	//更新下载进度
 	void update_progress(int32_t FileSeq, uint64_t CurFileSize, uint64_t CurSpeed);
+
+	//文件下载完成
 	void file_complete(int32_t FileSeq);
 private://各个模块
 	MoudleGui*					m_pMoudleGui;
 	MoudleNet*					m_pMoudleNet;
-	MoudleDataBase*				m_pMoudleDataBase;
 	MoudleHandler*				m_pMoudleHandler;
 private:
 	base::ThreadPool*			m_pThreadPool;
-
-private:
-	uint32_t					m_UnusedFileSeq;
 };

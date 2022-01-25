@@ -142,17 +142,17 @@ namespace peer
 		//应该由定时器调用，延时回收
 		void recycle_session(uint16_t SessionId);
 
-		//获取一个还没有查询过的Peer
-		uint16_t search_pop();
+		//获取一个还没有登录过自己PID的Peer
+		uint16_t register_pop();
 
-		//加入一个没有查询过的Peer
-		void search_push(uint16_t SessionId);
+		//加入一个还没有登录过自己PID的Peer
+		void register_push(uint16_t SessionId);
 
 		//获取一个等待连接的Peer
-		int32_t connect_pop();
+		int32_t search_pop();
 
 		//加入一个没有连接的Peer
-		void connect_push(int32_t PeerId);
+		void search_push(int32_t PeerId);
 
 		static bool info(const PeerAddress& PeerAddr, std::string& strIP, uint16_t& Port);
 	private:
@@ -174,7 +174,7 @@ namespace peer
 		SessionIdMap				m_SessionIdMap;		//Sockaddr*->SessionId的映射
 		std::list<uint16_t>			m_SessionIdQueue;	//用于分配未使用的SessionId
 	private:
-		std::list<uint16_t>			m_PrepareToSearch;	//等待发起搜索的Session
+		std::list<uint16_t>			m_PrepareToRegister;//等待发起登录的Session
 		std::list<int32_t>			m_PrepareToConnect;	//等待建立连接的Peer
 		std::mutex					m_SearchMutex;
 		std::mutex					m_ConnectMutex;

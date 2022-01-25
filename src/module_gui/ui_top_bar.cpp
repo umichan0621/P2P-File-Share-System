@@ -1,35 +1,33 @@
 ﻿#include "ui_top_bar.h"
 #include <QFile>
+#include <QStyle>
+#include <Qvariant>
 #include <QHBoxLayout>
-#include <base/logger/logger.h>
 
 namespace gui
 {
 	TopBarButton::TopBarButton(QWidget* Parent)
-		:QPushButton(Parent), m_bIsClose(false) {}
+		:QPushButton(Parent){}
 
-	void TopBarButton::init(const std::string& ImagePath, bool bIsClose)
+	void TopBarButton::init(const std::string& strType)
 	{
-		m_ImagePath = QString::fromStdString(ImagePath);
-		m_bIsClose = bIsClose;
+		m_strType = QString::fromStdString(strType);
+		setProperty("Type", m_strType);
+		if (m_strType == "close")
+		{
+			setProperty("IsClose", "close");
+		}
 		setFixedSize(45, 32);
-
 	}
 
-	void TopBarButton::set_style(const QString& Style)
+	void TopBarButton::set_style(const QString& qssStyle, const QString& Style)
 	{
-		QFile QssStyle("qss/top_bar.qss");
-		QssStyle.open(QFile::ReadOnly);
-		QString Temp = QssStyle.readAll();
-		Temp.replace("IMAGE_PATH", m_ImagePath);
-		setStyleSheet(Temp);
-		if (m_bIsClose == true)
+		setStyleSheet(qssStyle);
+		if (m_strType != "close")
 		{
-			setObjectName("TopBarClose");
-		}
-		else
-		{
-			setObjectName("TopBar_" + Style);
+			setProperty("IsClose", Style);
+			style()->unpolish(this);
+			style()->polish(this);
 		}
 	}
 
@@ -39,14 +37,14 @@ namespace gui
 		m_pMax(new TopBarButton(this)),
 		m_pClose(new TopBarButton(this))
 	{
-		init();
-	}
+		//读取样式
+		QFile QssStyle("qss/top_bar.qss");
+		QssStyle.open(QFile::ReadOnly);
+		m_qssStyle = QssStyle.readAll();
 
-	void TopBar::init()
-	{
-		m_pMin->init("image/min.png");
-		m_pMax->init("image/max.png");
-		m_pClose->init("image/close.png", true);
+		m_pMin->init("min");
+		m_pMax->init("max");
+		m_pClose->init("close");
 		QHBoxLayout* pRightLayout = new QHBoxLayout(this);
 		pRightLayout->addWidget(m_pMin);
 		pRightLayout->addWidget(m_pMax);
@@ -57,8 +55,8 @@ namespace gui
 
 	void TopBar::set_style(const QString& Style)
 	{
-		m_pMin->set_style(Style);
-		m_pMax->set_style(Style);
-		m_pClose->set_style(Style);
+		m_pMin->set_style(m_qssStyle,Style);
+		m_pMax->set_style(m_qssStyle, Style);
+		m_pClose->set_style(m_qssStyle, Style);
 	}
 }

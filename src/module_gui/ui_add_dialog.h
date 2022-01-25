@@ -42,7 +42,7 @@ namespace gui
 		QPushButton*		m_pAddFile;
 		QPushButton*		m_pAddShare;
 		QPushButton*		m_pAddPeer;
-		QFrame*				m_pLine;
+		QFrame*				m_pLineLow;
 		QWidget*			m_pBottom;
 		QPushButton*		m_pCancel;
 		QPushButton*		m_pSubmit;

@@ -1,167 +1,20 @@
 ﻿#include "ui_share_tree.h"
+#include <QFile>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QScrollBar>
-#include <QFile>
 #include <base/config.hpp>
 #include <base/logger/logger.h>
+#include <module_db/database.h>
+
 constexpr int32_t ROW_HEIGHT = 35;
-QString gui::FileNameGroup::m_qssStyle = "";
-#define CONNECT_BUTTON(_BUTTON,_FUNC) connect(_BUTTON, &QPushButton::clicked, this, _FUNC)
 
 namespace gui
 {
-	FileNameGroup::FileNameGroup(QWidget* Parent) :
-		m_pCheckBox(new QCheckBox(this)),
-		m_pLink(new QPushButton(this)),
-		m_pDelete(new QPushButton(this)),
-		m_pFolder(new QPushButton(this)),
-		m_FileSeq(0)
-	{}
-
-	FileNameGroup::~FileNameGroup()
-	{
-		//LOG_ERROR << "~";
-		//m_pCheckBox->disconnect();
-		//m_pLink->disconnect();
-		//m_pDelete->disconnect();
-		//m_pFolder->disconnect();
-		//disconnect();
-	}
-
-	void FileNameGroup::load_qss()
-	{
-		QFile QssFile("qss/share_tree.qss");
-		QssFile.open(QFile::ReadOnly);
-		m_qssStyle = QssFile.readAll();
-	}
-
-	void FileNameGroup::init(int32_t FileSeq, QString FileName)
-	{
-		m_FileSeq = FileSeq;
-		setFixedHeight(ROW_HEIGHT);
-		//设置布局
-		QHBoxLayout* pLayout = new QHBoxLayout(this);
-		pLayout->setContentsMargins(0, 0, 0, 0);
-		pLayout->addWidget(m_pCheckBox);
-		pLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Fixed));
-		pLayout->addWidget(m_pLink);
-		pLayout->addWidget(m_pDelete);
-		pLayout->addWidget(m_pFolder);
-		hide_button();
-		m_pCheckBox->setText(FileName);
-		//设置按钮样式
-		m_pCheckBox->setStyleSheet(m_qssStyle);
-		m_pLink->setStyleSheet(m_qssStyle);
-		m_pDelete->setStyleSheet(m_qssStyle);
-		m_pFolder->setStyleSheet(m_qssStyle);
-		m_pLink->setProperty("Button", "link");
-		m_pDelete->setProperty("Button", "close");
-		m_pFolder->setProperty("Button", "folder");
-
-		init_solts();
-	}
-
-	void FileNameGroup::init_solts()
-	{
-		CONNECT_BUTTON(m_pLink, [&]()
-			{
-				emit(link_me(m_FileSeq));
-			});
-		CONNECT_BUTTON(m_pDelete, [&]()
-			{
-				emit(delete_me(m_FileSeq));
-			});
-		CONNECT_BUTTON(m_pFolder, [&]()
-			{
-				emit(folder_me(m_FileSeq));
-			});
-	}
-
-	void FileNameGroup::set_style(const QString& Style, const QString& Language)
-	{
-		load_qss();
-		m_pCheckBox->setStyleSheet(m_qssStyle);
-
-		m_pCheckBox->setProperty("CheckBox", Style);
-		style()->unpolish(m_pCheckBox);
-		style()->polish(m_pCheckBox);
-	}
-
-	void FileNameGroup::show_button()
-	{
-		m_pLink->show();
-		m_pDelete->show();
-		m_pFolder->show();
-	}
-
-	void FileNameGroup::hide_button()
-	{
-		m_pLink->hide();
-		m_pDelete->hide();
-		m_pFolder->hide();
-	}
-
-	TreeWidget::TreeWidget(QWidget* Parent)
-		:QTreeWidget(Parent),
-		m_pCurItem(nullptr)
-	{
-		setMouseTracking(true);
-	}
-	
-	void TreeWidget::mouseMoveEvent(QMouseEvent* pEvent)
-	{
-		if (pEvent->y() <= 2 || //上界
-			pEvent->y() >= height() - 37 || //下届
-			pEvent->x() <= 2 || //左界
-			pEvent->x() >= width() - 16)//右界
-		{
-			if (nullptr != m_pCurItem)
-			{
-				emit(itemLeft(m_pCurItem));
-				m_pCurItem = nullptr;
-			}
-			return;
-		}
-		QTreeWidgetItem* pCurItem = itemAt(pEvent->x(), pEvent->y());
-		if (nullptr == pCurItem)//当前在空item
-		{
-			if (nullptr != m_pCurItem)//之前不为空
-			{
-				emit(itemLeft(m_pCurItem));
-				m_pCurItem = nullptr;
-			}
-		}
-		else
-		{
-			if (nullptr == m_pCurItem)//之前在空的item
-			{
-				m_pCurItem = pCurItem;
-				emit(itemEntered(m_pCurItem));
-			}
-			else if (pCurItem != m_pCurItem)//离开前一个
-			{
-				emit(itemLeft(m_pCurItem));
-				m_pCurItem = pCurItem;
-				emit(itemEntered(m_pCurItem));
-			}
-		}
-	}
-
-	QTreeWidgetItem* TreeWidget::itemCur()
-	{
-		return m_pCurItem;
-	}
-
 	ShareTree::ShareTree(QWidget* Parent)
 		:QWidget(Parent),
 		m_pTree(new TreeWidget(this)),
 		m_pCurGroup(nullptr)
-	{
-		init();
-	}
-
-	void ShareTree::init()
 	{
 		//为子组件读取样式，避免重复读文件
 		FileNameGroup::load_qss();
@@ -193,7 +46,6 @@ namespace gui
 		m_pTree->verticalScrollBar()->setStyleSheet(QssScrollFile.readAll());
 		init_slots();
 	}
-
 
 	void ShareTree::init_slots()
 	{
@@ -240,11 +92,17 @@ namespace gui
 			});
 		//向Gui添加新的分享文件
 		connect(this, &ShareTree::new_share, this, 
-			[&](int32_t FileSeq, const QString& FileName,const QString& Remark, 
-				const QString& CreateTime, uint64_t UploadData)
+			[&](int32_t FileSeq)
 			{
+				std::string FileName, Remark, CreateTime;
+				uint64_t UploadData = 0;
 				std::unique_lock<std::mutex> Lock(m_Mutex);
 				if (0 != m_pItemMap.count(FileSeq))
+				{
+					return;
+				}
+				bool bRes = g_pDataBaseManager->select_file_info(FileSeq, FileName, UploadData, Remark, CreateTime);
+				if (false == bRes)
 				{
 					return;
 				}
@@ -260,18 +118,19 @@ namespace gui
 				{
 					m_pTree->addTopLevelItem(pCurLine);
 				}
+
 				//初始化第0格内容
 				FileNameGroup* pFileNameGroup = new FileNameGroup();
-				pFileNameGroup->init(FileSeq, FileName);
+				pFileNameGroup->init(FileSeq, QString::fromStdString(FileName));
 				pFileNameGroup->set_style(m_strStyle, m_strLanguage);
 				pFileNameGroup->setMouseTracking(true);
 				m_pTree->setItemWidget(pCurLine, 0, pFileNameGroup);
 				//设置分享时间
-				pCurLine->setText(1, CreateTime);
+				pCurLine->setText(1, QString::fromStdString(CreateTime));
 				//设置上传流量
 				pCurLine->setText(2, QString::number(UploadData) + "1232MB");
 				//设置备注
-				pCurLine->setText(3, Remark);
+				pCurLine->setText(3, QString::fromStdString(Remark));
 				//连接信号
 				init_sub_slots(pFileNameGroup);
 			});

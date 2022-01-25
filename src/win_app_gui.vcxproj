@@ -167,10 +167,14 @@
     <ClCompile Include="module_gui\ui_add_dialog.cpp" />
     <ClCompile Include="module_gui\ui_download_card.cpp" />
     <ClCompile Include="module_gui\ui_download_list.cpp" />
+    <ClCompile Include="module_gui\ui_file_manager.cpp" />
     <ClCompile Include="module_gui\ui_frameless_dialog.cpp" />
     <ClCompile Include="module_gui\ui_frameless_widget.cpp" />
+    <ClCompile Include="module_gui\ui_list_component.cpp" />
+    <ClCompile Include="module_gui\ui_my_file.cpp" />
     <ClCompile Include="module_gui\ui_left_bar.cpp" />
     <ClCompile Include="module_gui\ui_main_widget.cpp" />
+    <ClCompile Include="module_gui\ui_share_component.cpp" />
     <ClCompile Include="module_gui\ui_share_tree.cpp" />
     <ClCompile Include="module_gui\ui_top_bar.cpp" />
     <ClCompile Include="module_handler\handler_base.cpp" />
@@ -225,6 +229,10 @@
     <QtMoc Include="module_gui\ui_main_widget.h" />
     <QtMoc Include="module_gui\ui_share_tree.h" />
     <QtMoc Include="module_gui\ui_top_bar.h" />
+    <QtMoc Include="module_gui\ui_my_file.h" />
+    <QtMoc Include="module_gui\ui_file_manager.h" />
+    <QtMoc Include="module_gui\ui_list_component.h" />
+    <QtMoc Include="module_gui\ui_share_component.h" />
     <ClInclude Include="module_handler\handler_base.h" />
     <ClInclude Include="module_handler\handler_file.h" />
     <ClInclude Include="module_handler\handler_interface.h" />

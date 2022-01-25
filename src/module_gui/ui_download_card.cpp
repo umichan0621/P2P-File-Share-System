@@ -154,6 +154,15 @@ namespace gui
 
 	void DownloadCard::set_style(const QString& Style, const QString& Language)
 	{
+		{
+			load_qss();
+			//设置按钮样式
+			m_pStartPause->setStyleSheet(m_qssStyle);
+			m_pDelete->setStyleSheet(m_qssStyle);
+			m_pFolder->setStyleSheet(m_qssStyle);
+			m_pLink->setStyleSheet(m_qssStyle);
+			m_pInfo->setStyleSheet(m_qssStyle);
+		}
 		m_strStyle = Style;
 		m_strLanguage = Language;
 		//设置各个控件的属性并刷新

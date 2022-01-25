@@ -263,25 +263,25 @@ namespace peer
 		return -1;
 	}
 
-	uint16_t PeerManager::search_pop()
+	uint16_t PeerManager::register_pop()
 	{
 		std::lock_guard<std::mutex> Lock(m_SearchMutex);
-		if (true == m_PrepareToSearch.empty())
+		if (true == m_PrepareToRegister.empty())
 		{
 			return ERROR_SESSION_ID;
 		}
-		uint16_t SessionId = m_PrepareToSearch.front();
-		m_PrepareToSearch.pop_front();
+		uint16_t SessionId = m_PrepareToRegister.front();
+		m_PrepareToRegister.pop_front();
 		return SessionId;
 	}
 
-	void PeerManager::search_push(uint16_t SessionId)
+	void PeerManager::register_push(uint16_t SessionId)
 	{
 		std::lock_guard<std::mutex> Lock(m_SearchMutex);
-		m_PrepareToSearch.push_back(SessionId);
+		m_PrepareToRegister.push_back(SessionId);
 	}
 
-	int32_t PeerManager::connect_pop()
+	int32_t PeerManager::search_pop()
 	{
 		std::lock_guard<std::mutex> Lock(m_ConnectMutex);
 		if (true == m_PrepareToConnect.empty())
@@ -293,7 +293,7 @@ namespace peer
 		return PeerId;
 	}
 
-	void PeerManager::connect_push(int32_t PeerId)
+	void PeerManager::search_push(int32_t PeerId)
 	{
 		std::lock_guard<std::mutex> Lock(m_ConnectMutex);
 		m_PrepareToConnect.push_back(PeerId);
