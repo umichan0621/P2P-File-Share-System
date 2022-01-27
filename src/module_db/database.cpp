@@ -206,6 +206,21 @@ namespace database
 		return true;
 	}
 
+	bool DataBaseManager::update_file_parent(int32_t FileSeq, int32_t FileParent)
+	{
+		string strSql = "UPDATE FILE_INFO SET \
+                    FILE_PARENT = " + std::to_string(FileParent) + "\
+					WHERE FILE_SEQ = " + to_string(FileSeq);
+		sqlite3_stmt* pStmt = NULL;
+		sqlite3_prepare(m_pSqliteDatabase, strSql.c_str(), -1, &pStmt, NULL);
+		if (SQLITE_DONE != sqlite3_step(pStmt))
+		{
+			LOG_ERROR << "Fail to update File Parent, FileSeq = " << FileSeq;
+			return false;
+		}
+		return true;
+	}
+
 	//改
 
 	//查

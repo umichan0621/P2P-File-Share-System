@@ -22,7 +22,6 @@ namespace gui
 	public:
 		FileListWidget(QWidget* Parent = Q_NULLPTR);
 	private:
-		void init();
 		void init_menu();
 		void init_slots();
 
@@ -33,15 +32,18 @@ namespace gui
 		void create_folder();
 		void open_folder(int32_t FileSeq);
 		void delete_file(int32_t FileSeq,int32_t ItemSeq);
+		void move_file(int32_t FileSeq);
 	private:
 		QMenu*				m_pBlankMenu;
 		QMenu*				m_pItemMenu;
 		QAction*			m_pNewFolder;
 		QAction*			m_pShare;
+		QAction*			m_pUpload;
 		QAction*			m_pAdd;
 		QAction*			m_pOpen;
 		QAction*			m_pRename;
 		QAction*			m_pDelete;
+		QAction*			m_pMove;
 		QListWidgetItem*	m_pCurItem;
 	};
 }

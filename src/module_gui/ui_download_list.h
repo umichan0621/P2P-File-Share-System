@@ -35,7 +35,6 @@ namespace gui
 		void update_progress(int32_t FileSeq, uint64_t CurFileSize, uint64_t CurSpeed);
 		void file_complete(int32_t FileSeq);
 	private:
-		void init();
 		void init_slots();
 		void init_sub_slots(DownloadCard* pCurWidget);
 		void set_button_style();

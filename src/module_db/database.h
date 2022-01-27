@@ -41,7 +41,7 @@ namespace database
         bool update_file_info(int32_t FileSeq, uint64_t WriteTime);
         bool update_file_info(int32_t FileSeq, int8_t FileType);
         bool update_file_name(int32_t FileSeq, const std::string& strFileName);
-
+        bool update_file_parent(int32_t FileSeq, int32_t FileParent);
     public://查
         bool select_file_info(std::vector<int32_t>& VecFileSeq, int8_t FileType);
 

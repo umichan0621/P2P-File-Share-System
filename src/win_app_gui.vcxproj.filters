@@ -251,6 +251,9 @@
     <ClCompile Include="module_gui\ui_share_component.cpp">
       <Filter>module_gui\share</Filter>
     </ClCompile>
+    <ClCompile Include="module_gui\ui_folder_choose_dialog.cpp">
+      <Filter>module_gui\dialog</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="module_db\database.h">
@@ -423,6 +426,9 @@
     </QtMoc>
     <QtMoc Include="module_gui\ui_share_component.h">
       <Filter>module_gui\share</Filter>
+    </QtMoc>
+    <QtMoc Include="module_gui\ui_folder_choose_dialog.h">
+      <Filter>module_gui\dialog</Filter>
     </QtMoc>
   </ItemGroup>
 </Project>

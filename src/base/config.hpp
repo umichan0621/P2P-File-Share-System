@@ -30,6 +30,7 @@ enum FILE_STATUS
 	STATUS_PAUSE,		//暂停下载的任务
 	STATUS_COMPLETE,	//下载完成的文件，同时自动作为分享中的文件存在
 	STATUS_SHARE,		//分享中的文件
+	STATUS_ONLINE,		//本地数据库中记录且本地有的文件
 	STATUS_OFFLINE,		//本地数据库中记录但本地没有的文件
 	STATUS_FOLDER,		//数据库逻辑文件的文件夹
 	STATUS_FOLDER_SHARE //数据库逻辑文件分享中的文件夹

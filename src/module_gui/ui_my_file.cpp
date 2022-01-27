@@ -6,6 +6,7 @@
 #include <base/config.hpp>
 #include <module_db/database.h>
 #include "ui_list_component.h"
+#pragma warning(disable:26812)
 
 namespace gui
 {
@@ -37,12 +38,6 @@ namespace gui
 		m_pBack(new QPushButton(this)),
 		m_pNext(new QPushButton(this))
 	{
-		init();
-		init_slots();
-	}
-
-	void MyFile::init()
-	{
 		load_qss();
 		setMouseTracking(true);
 
@@ -62,8 +57,11 @@ namespace gui
 		m_pBack->setStyleSheet(m_qssStyle);
 		m_pNext->setStyleSheet(m_qssStyle);
 
+		init_slots();
 		refresh_path();
 	}
+
+
 
 	void MyFile::init_slots()
 	{
@@ -88,7 +86,7 @@ namespace gui
 					m_FolderMap[Info.Parent].emplace_back(FileSeq);
 					if (Info.Parent == m_pCurFolder)
 					{
-						show_file(FileSeq);
+						refresh();
 					}
 				}
 			});
@@ -97,23 +95,38 @@ namespace gui
 		connect(m_pFileManager, &FileListWidget::delete_file, this, [&]
 		(int32_t FileSeq,int32_t ItemSeq)
 			{
+				{//询问是否删除
+
+				}
 				std::lock_guard<std::mutex> Lock(m_MyFileMutex);
-				if (0 == m_FileMap.count(FileSeq))
+				if (0 != m_FileMap.count(FileSeq))
 				{
-					return;
+					{//删除My File逻辑文件夹内的文件/文件夹
+					//从上一级文件夹中删除
+						int32_t Parent = m_FileMap[FileSeq].Parent;
+						for (int32_t i = 0; i < m_FolderMap[Parent].size(); ++i)
+						{
+							if (m_FolderMap[Parent][i] == FileSeq)
+							{
+								std::swap(m_FolderMap[Parent][i], m_FolderMap[Parent].back());
+								m_FolderMap[Parent].pop_back();
+								break;
+							}
+						}
+						//删除当前文件和所有子文件/文件夹
+						delete_folder(FileSeq);
+
+					}//删除My File逻辑文件夹内的文件/文件夹
+					//删除Gui
+					m_pFileManager->takeItem(ItemSeq);
 				}
-				int32_t Parent = m_FileMap[FileSeq].Parent;
-				m_FileMap.erase(FileSeq);
-				for (int32_t i = 0; i < m_FolderMap[Parent].size(); ++i)
-				{
-					if (m_FolderMap[Parent][i] == FileSeq)
-					{
-						std::swap(m_FolderMap[Parent][i], m_FolderMap[Parent].back());
-						m_FolderMap[Parent].pop_back();
-						break;
-					}
-				}
-				m_pFileManager->takeItem(ItemSeq);
+			});
+
+		//移动文件到
+		connect(m_pFileManager, &FileListWidget::move_file, this, [&]
+			(int32_t FileSeq)
+			{
+				emit(file_move(FileSeq));
 			});
 
 		//打开文件夹
@@ -180,10 +193,32 @@ namespace gui
 					m_FolderMap[Info.Parent].emplace_back(FileSeq);
 					if (Info.Parent == m_pCurFolder)
 					{
-						show_file(FileSeq);
+						refresh();
 					}
 				}
 			});
+
+		connect(this, &MyFile::file_move_to, this, [&]
+			(int32_t FileSeq, int32_t FileParent)
+		{
+				std::lock_guard<std::mutex> Lock(m_MyFileMutex);
+				if (0 != m_FileMap.count(FileSeq))
+				{
+					int32_t OldParent = m_FileMap[FileSeq].Parent;
+					m_FileMap[FileSeq].Parent= FileParent;
+					m_FolderMap[FileParent].push_back(FileSeq);
+					for (int32_t i = 0; i < m_FolderMap[OldParent].size(); ++i)
+					{
+						if (m_FolderMap[OldParent][i] == FileSeq)
+						{
+							std::swap(m_FolderMap[OldParent][i], m_FolderMap[OldParent].back());
+							m_FolderMap[OldParent].pop_back();
+							break;
+						}
+					}
+					refresh();
+				}
+		});
 	}
 
 	void MyFile::set_style(const QString& Style, const QString& Language)
@@ -192,6 +227,7 @@ namespace gui
 		m_strStyle = Style;
 		m_pFileManager->setStyleSheet(m_qssStyle);
 		m_pFileManager->setProperty("MyFile", Style);
+
 		style()->unpolish(m_pFileManager);
 		style()->polish(m_pFileManager);
 		for (auto& pCurButton : m_FolderPath)
@@ -209,6 +245,33 @@ namespace gui
 		QFile QssFile("qss/my_file.qss");
 		QssFile.open(QFile::ReadOnly);
 		m_qssStyle = QssFile.readAll();
+	}
+
+	Folder MyFile::folder_info()
+	{
+		std::lock_guard<std::mutex> Lock(m_MyFileMutex);
+		return sub_folder(0);
+	}
+
+	Folder MyFile::sub_folder(int32_t FileSeq)
+	{
+		Folder CurFolder = { 0 };
+		CurFolder.FileSeq = FileSeq;
+		CurFolder.FileName = QString::fromStdString(m_FileMap[FileSeq].FileName);
+		
+		for (int32_t SubFile : m_FolderMap[FileSeq])
+		{
+			if (m_FileMap[SubFile].Type >= STATUS_FOLDER)
+			{
+				CurFolder.SubFolder.emplace_back(sub_folder(SubFile));
+			}
+		}
+		std::sort(CurFolder.SubFolder.begin(), CurFolder.SubFolder.end(), 
+			[](const Folder&F1, const Folder& F2)
+			{
+				return F1.FileName < F2.FileName;
+			});
+		return CurFolder;
 	}
 
 	void MyFile::refresh_path()
@@ -294,11 +357,45 @@ namespace gui
 		{
 			delete m_pFileManager->takeItem(0);
 		}
+		//排序
+		std::vector<int32_t> VecSort;
 		for (auto FileSeq : m_FolderMap[m_pCurFolder])
+		{
+			VecSort.push_back(FileSeq);
+		}
+		std::sort(VecSort.begin(), VecSort.end(), [&]
+		(const int32_t& FileSeq1, const int32_t& FileSeq2)
+			{
+				FileInfo& Info1 = m_FileMap[FileSeq1];
+				FileInfo& Info2 = m_FileMap[FileSeq2];
+				//文件夹优先显示
+				int8_t FileType1 = Info1.Type >= STATUS_FOLDER ? STATUS_FOLDER : STATUS_OFFLINE;
+				int8_t FileType2 = Info2.Type >= STATUS_FOLDER ? STATUS_FOLDER : STATUS_OFFLINE;
+				if (FileType1 != FileType2)
+				{
+					return FileType1 > FileType2;
+				}
+				//按文件名排序
+				return m_FileMap[FileSeq1].FileName < m_FileMap[FileSeq2].FileName;
+			});
+
+		for (auto FileSeq : VecSort)
 		{
 			show_file(FileSeq);
 		}
 		refresh_path();
+	}
+
+	void MyFile::delete_folder(int32_t FileSeq)
+	{
+		for (auto& SubFileSeq : m_FolderMap[FileSeq])
+		{
+			delete_folder(SubFileSeq);
+		}
+		m_FileMap.erase(FileSeq);
+		m_FolderMap.erase(FileSeq);
+		//向外部发送删除的信号
+		emit(delete_file(FileSeq));
 	}
 
 	void MyFile::show_file(int32_t FileSeq)
@@ -327,6 +424,7 @@ namespace gui
 				if (true == bRes)
 				{
 					m_FileMap[FileSeq].FileName = strFileName.toStdString();
+					refresh();
 				}
 			});
 	}

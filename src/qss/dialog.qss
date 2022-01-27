@@ -53,7 +53,7 @@ QPushButton[Cancel='light'],[Cancel='dark']
 
 QPushButton[Cancel='light']
 {
-	border:none;
+	border:1px solid #cfcfcf;
     background-color:#ffffff;
     color:#606266;
 }
@@ -270,38 +270,37 @@ QLabel[LabelText='dark']
 /*操作提示标签*/
 
 /*选择按钮*/
-QPushButton[SelectButton='unchoose_light'],[SelectButton='choose_light'],[SelectButton='unchoose_dark'],[SelectButton='choose_dark']
+QPushButton[ButtonStyle='light'],[ButtonStyle='dark']
 {
 	font-family:"Microsoft YaHei";
 	font-size:15px;
 	border:none;
-	/*border-radius:0px;*/
 	background-color:transparent;
 }
 
-QPushButton[SelectButton='unchoose_light'],[SelectButton='unchoose_dark']:hover
+QPushButton[ButtonStyle='light'],[ButtonStyle='dark']:hover
 {
     color:#5b5bfa;
 }
 
-QPushButton[SelectButton='choose_light'],[SelectButton='choose_dark']
-{
-	border-bottom:2px solid #5b5bfa;
-    color:#5b5bfa;
-}
-
-QPushButton[SelectButton='choose_light'],[SelectButton='choose_dark']:hover
+QPushButton[ButtonStatus='choose']
 {
 	border-bottom:2px solid #5b5bfa;
     color:#5b5bfa;
 }
 
-QPushButton[SelectButton='unchoose_light']
+QPushButton[ButtonStatus='choose']:hover
+{
+	border-bottom:2px solid #5b5bfa;
+    color:#5b5bfa;
+}
+
+QPushButton[ButtonStyle='light']
 {
     color:#606266;
 }
 
-QPushButton[SelectButton='unchoose_dark']
+QPushButton[ButtonStyle='dark']
 {
     color:#a2a3a4;
 }

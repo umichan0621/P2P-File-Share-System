@@ -16,7 +16,6 @@
 #include <module_file/file_ctrl/file_ctrl_complete.h>
 #include <module_file/file_ctrl/file_ctrl_incomplete.h>
 #include <iostream>
-#define CONNECT_SIGNAL(_OBJ,_SIGNAL,_FUNC)  connect(_OBJ, &_SIGNAL, this, _FUNC)
 
 using namespace std::chrono;
 #ifdef _DEBUG
@@ -123,8 +122,6 @@ bool AppCtrl::init()
 	g_pFileManager->set_max_download(g_pConfig->max_download());
 	//Net模块开始监听端口
 	m_pMoudleNet->listen(m_pThreadPool);
-	//初始化Gui
-	m_pMoudleGui->init();
 	//加载数据库中记录的文件
 	init_file();
 	//启动定时器线程
@@ -167,14 +164,14 @@ void AppCtrl::init_slots()
 	qRegisterMetaType<int32_t>("int32_t");
 	qRegisterMetaType<uint64_t>("uint64_t");
 	//开始下载文件的信号
-	CONNECT_SIGNAL(m_pMoudleGui->download_list(), gui::DownloadList::start_file,
+	connect(m_pMoudleGui->download_list(), &gui::DownloadList::start_file, this,
 		[&](int32_t FileSeq)
 		{
 			int8_t Status = STATUS_DOWNLOAD;
 			g_pDataBaseManager->update_file_info(FileSeq, Status);
 		});
 	//暂停下载文件的信号
-	CONNECT_SIGNAL(m_pMoudleGui->download_list(), gui::DownloadList::pause_file,
+	connect(m_pMoudleGui->download_list(), &gui::DownloadList::pause_file, this,
 		[&](int32_t FileSeq)
 		{
 			int8_t Status = STATUS_PAUSE;
@@ -182,43 +179,43 @@ void AppCtrl::init_slots()
 
 		});
 	//删除下载文件的信号
-	CONNECT_SIGNAL(m_pMoudleGui->download_list(), gui::DownloadList::delete_file,
+	connect(m_pMoudleGui->download_list(), &gui::DownloadList::delete_file, this,
 		[&](int32_t FileSeq)
 		{
 			g_pDataBaseManager->delete_file_info(FileSeq);
 			g_pFileManager->kill_download_file(FileSeq);
 		});
 	//删除分享文件的信号
-	CONNECT_SIGNAL(m_pMoudleGui->share_tree(), gui::ShareTree::delete_file,
+	connect(m_pMoudleGui->share_tree(), &gui::ShareTree::delete_file, this,
 		[&](int32_t FileSeq)
 		{
 			g_pDataBaseManager->delete_file_info(FileSeq);
 			g_pFileManager->kill_share_file(FileSeq);
 		});
 	//获取下载文件分享链接的信号
-	CONNECT_SIGNAL(m_pMoudleGui->download_list(), gui::DownloadList::create_link,
+	connect(m_pMoudleGui->download_list(), &gui::DownloadList::create_link, this,
 		[&](int32_t FileSeq)//下载页面
 		{
 			get_link(FileSeq);
 		});
-	CONNECT_SIGNAL(m_pMoudleGui->share_tree(), gui::ShareTree::create_link,
+	connect(m_pMoudleGui->share_tree(), &gui::ShareTree::create_link, this,
 		[&](int32_t FileSeq)//分享页面
 		{
 			get_link(FileSeq);
 		});
 	//打开下载文件路径的信号
-	CONNECT_SIGNAL(m_pMoudleGui->download_list(), gui::DownloadList::open_folder,
+	connect(m_pMoudleGui->download_list(), &gui::DownloadList::open_folder, this,
 		[&](int32_t FileSeq)
 		{
 			open_folder(FileSeq);
 		});
-	CONNECT_SIGNAL(m_pMoudleGui->share_tree(), gui::ShareTree::open_folder,
+	connect(m_pMoudleGui->share_tree(), &gui::ShareTree::open_folder, this,
 		[&](int32_t FileSeq)
 		{
 			open_folder(FileSeq);
 		});
 	//添加下载任务的信号
-	CONNECT_SIGNAL(m_pMoudleGui->add_dialog(), gui::AddDialog::add_download_file,
+	connect(m_pMoudleGui->add_dialog(), &gui::AddDialog::add_download_file, this,
 		[&](const QString& strLink, const QString& strPath)
 		{
 			std::string Link = strLink.toStdString();
@@ -234,7 +231,7 @@ void AppCtrl::init_slots()
 			}
 		});
 	//添加分享文件的信号
-	CONNECT_SIGNAL(m_pMoudleGui->add_dialog(), gui::AddDialog::add_share_file,
+	connect(m_pMoudleGui->add_dialog(), &gui::AddDialog::add_share_file, this,
 		[&](const QString& strRemark, const QString& strPath)
 		{
 			//将任务交给其他工作线程处理，避免出现卡死的现象（当前任务耗时较长）
@@ -244,6 +241,28 @@ void AppCtrl::init_slots()
 				strRemark.toStdString(),
 				strPath.toStdString()));
 		});
+	//添加来自My File删除文件/文件夹的信号
+	connect(m_pMoudleGui->my_file(), &gui::MyFile::delete_file, this,
+		[&](int32_t FileSeq)
+		{
+			bool bRes=g_pDataBaseManager->delete_file_info(FileSeq);
+			if (true == bRes)
+			{
+				LOG_ERROR << "DELETE " << FileSeq;
+			}
+		});
+	//收到确认移动文件的信号，实施文件移动
+	connect(m_pMoudleGui->folder_choose_dialog(), 
+		&gui::FolderChooseDialog::file_move_to, this, [&]
+	(int32_t FileSeq, int32_t FileParent)
+		{
+			bool bRes = g_pDataBaseManager->update_file_parent(FileSeq, FileParent);
+			if (true == bRes)
+			{
+				emit(file_move_to(FileSeq, FileParent));
+			}
+		});
+
 	//发送向文件管理系统添加文件/文件夹的信号
 	connect(this, &AppCtrl::add_file, m_pMoudleGui->my_file(), &gui::MyFile::add_file);
 	//发送新建分享文件的信号
@@ -254,11 +273,13 @@ void AppCtrl::init_slots()
 	connect(this, &AppCtrl::update_progress, m_pMoudleGui->download_list(), &gui::DownloadList::update_progress);
 	//发送文件下载完成的信号
 	connect(this, &AppCtrl::file_complete, m_pMoudleGui->download_list(), &gui::DownloadList::file_complete);
+	//发送文件移动完成的信号
+	connect(this, &AppCtrl::file_move_to, m_pMoudleGui->my_file(), &gui::MyFile::file_move_to);
 }
 
 void AppCtrl::init_file()
 {
-	uint64_t FileSize=0;
+	uint64_t FileSize = 0;
 	base::SHA1 SHA1Struct = { 0 };
 	std::string strSHA1;
 	std::string strFilePath, strFileName;
@@ -298,7 +319,7 @@ void AppCtrl::init_file()
 			}
 		}
 	}//加载下载中文件
-	
+
 	{//加载暂停下载的文件
 		VecFileSeq.clear();
 		g_pDataBaseManager->select_file_info(VecFileSeq, STATUS_PAUSE);
@@ -312,7 +333,7 @@ void AppCtrl::init_file()
 		}
 	}//加载暂停下载的文件
 
-	
+
 	{//加载下载完成的文件
 		VecFileSeq.clear();
 		g_pDataBaseManager->select_file_info(VecFileSeq, STATUS_COMPLETE);
@@ -327,7 +348,7 @@ void AppCtrl::init_file()
 		}
 	}//加载下载完成的文件
 
-	
+
 	{//加载分享的文件
 		VecFileSeq.clear();
 		g_pDataBaseManager->select_file_info(VecFileSeq, STATUS_SHARE);
@@ -353,7 +374,7 @@ void AppCtrl::init_file()
 				g_pFileManager->add_share_file(pFileCtrl);
 				//加入PartnerTable
 				g_pPartnerTable->add_cid(SHA1Struct);
-				
+
 				{//GUI显示
 					//发送向文件管理系统添加文件/文件夹的信号
 					emit(add_file(FileSeq));
@@ -495,7 +516,7 @@ void AppCtrl::thread_loop_download()
 						{
 							//校验任务耗时长，交给其他线程处理
 							m_pThreadPool->add_task(std::bind(
-								&AppCtrl::sha1_check_thread, this, FileCtrl));
+								&AppCtrl::thread_sha1_check, this, FileCtrl));
 							FileCtrl.reset();
 							continue;
 						}
@@ -520,7 +541,7 @@ void AppCtrl::thread_loop_download()
 			int32_t RanPos = rand() % PartnerList.size();
 			for (int32_t i = 0; i < PartnerList.size(); ++i)
 			{
-				int32_t Pos=(RanPos+i)% PartnerList.size();
+				int32_t Pos = (RanPos + i) % PartnerList.size();
 				uint16_t SessionId = PartnerList[Pos];
 				net::Session* pCurSession = g_pSessionManager->session(SessionId);
 				if (nullptr != pCurSession)
@@ -531,8 +552,8 @@ void AppCtrl::thread_loop_download()
 				}
 			}
 		}//获取下载任务并向Peer请求
-		
-		WakeUpTime+= microseconds(BaseSleepTime / DOWNLOAD_RATE);
+
+		WakeUpTime += microseconds(BaseSleepTime / DOWNLOAD_RATE);
 		std::this_thread::sleep_until(WakeUpTime);
 	}
 }
@@ -585,7 +606,7 @@ void AppCtrl::thread_loop_search()
 	}
 }
 
-void AppCtrl::sha1_check_thread(file::FileCtrl FileCtrl)
+void AppCtrl::thread_sha1_check(file::FileCtrl FileCtrl)
 {
 	base::SHA1 ActrualSHA1Struct, SHA1Struct;
 	FileCtrl->sha1(SHA1Struct);
@@ -632,7 +653,7 @@ bool AppCtrl::try_add_download_file(std::string& strLink, std::string& strPath)
 		LOG_TRACE << "[Download Task]" << strSHA1 << " has been recorded, FileSeq = " << FileSeq;
 		return false;
 	}
-	
+
 	FileSeq = g_pDataBaseManager->file_seq();
 
 	std::string FileName;
@@ -671,12 +692,12 @@ bool AppCtrl::try_add_download_file(std::string& strLink, std::string& strPath)
 		g_pDataBaseManager->update_file_info(FileSeq, FileName, "");
 		g_pFileManager->add_download_file(pFileCtrl);
 		g_pFileManager->refresh_download_list();
-		
+
 		{//GUI显示
 			emit(add_file(FileSeq));
 			emit(new_download(FileSeq));
 		}//GUI显示
-		
+
 	}
 	return true;
 }
@@ -718,7 +739,7 @@ void AppCtrl::thread_add_share_file(std::string& strRemark, std::string& strPath
 	bRes = g_pDataBaseManager->update_file_info(FileSeq, FileName, strRemark);
 	//std::string CreateTime;
 	//bRes = g_pDataBaseManager->select_create_time(FileSeq, CreateTime);
-	
+
 	//QString Temp = QString::fromStdString(FileName);
 	{//GUI显示
 		emit(add_file(FileSeq));

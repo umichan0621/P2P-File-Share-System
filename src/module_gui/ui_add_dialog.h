@@ -27,7 +27,6 @@ namespace gui
 	public:
 		AddDialog(QWidget* Parent = Q_NULLPTR);
 	public:
-		void init();
 		void set_mode(uint8_t Mode);
 		void set_path_download(const QString& DefaultPath);
 		void set_path_share(const QString& DefaultPath);

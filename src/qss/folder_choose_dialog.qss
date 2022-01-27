@@ -1,0 +1,170 @@
+/*整体背景色*/
+QWidget[Background='light']
+{
+	border-radius:4px;
+	background-color:#ffffff;
+}
+
+QWidget[Background='dark']
+{
+	border-radius:4px;
+	background-color:#343434;
+}
+/*整体背景色*/
+
+QTreeWidget
+{
+    show-decoration-selected:1;/*整行的效果*/
+    font-family:"Microsoft YaHei";
+    font-size:14px;
+    background:transparent;
+    padding:0px;
+    margin:0px;
+}
+
+QTreeWidget[TreeWidget='light']
+{
+    border:2px solid #f5f5f5;
+    color:#727272;
+}
+
+QTreeWidget[TreeWidget='dark']
+{
+    border:2px solid #4a4a4a;
+    color:#aaaaaa;
+}
+
+QTreeWidget::item
+{
+	border:none;
+    padding-left:0px;
+    padding-right:15px;
+    margin:0px;
+}
+
+QTreeWidget::item[TreeWidget='light']:selected
+{
+    color:#727272;
+    background:#ecf1ff;
+}
+
+QTreeWidget::item[TreeWidget='dark']:selected
+{
+   color:#aaaaaa;
+   background:#444444;
+}
+
+QTreeWidget::branch[TreeWidget='light']:selected
+{
+    background:#ecf1ff;
+}
+
+QTreeWidget::branch[TreeWidget='dark']:selected
+{
+    background:#444444;
+}
+/*底部颜色*/
+QWidget[Bottom='light'],[Bottom='dark']
+{
+	border-radius:4px;
+	border-top-right-radius:0px;
+	border-top-left-radius:0px;
+}
+
+QWidget[Bottom='light']
+{
+	background-color:#f5f5f5;
+}
+
+QWidget[Bottom='dark']
+{
+	background-color:#4a4a4a;
+}
+/*底部颜色*/
+
+/*分割线*/
+QFrame[Line='light']
+{
+	border-top:2px solid #e4e7ed;
+}
+
+QFrame[Line='dark']
+{
+	border-top:2px solid #4a4a4a;
+}
+/*分割线*/
+
+/*取消*/
+QPushButton[Cancel='light'],[Cancel='dark']
+{
+	font-family:"Microsoft YaHei";
+	font-size:13px;
+	border-radius:4px;
+}
+
+QPushButton[Cancel='light']
+{
+	border:1px solid #cfcfcf;
+    background-color:#ffffff;
+    color:#606266;
+}
+
+QPushButton[Cancel='light']:hover
+{
+	border:1px solid #5b5bfa;
+    background-color:#efefff;
+    color:#5b5bfa;
+}
+
+QPushButton[Cancel='dark']
+{
+	border:none;
+    background-color:#5b5b5b;
+    color:#ffffff;
+}
+
+QPushButton[Cancel='dark']:hover
+{
+	border:1px solid #5b5bfa;
+    background-color:#333333;
+    color:#5b5bfa;
+}
+/*取消*/
+
+/*提交*/
+QPushButton[Confirm='light'],[Confirm='dark']
+{
+	font-family:"Microsoft YaHei";
+	font-size:13px;
+	font-weight:bold;
+	border-radius:4px;
+}
+
+QPushButton[Confirm='light']
+{
+	border:none;
+    background-color:#5b5bfa;
+    color:#ffffff;
+}
+
+QPushButton[Confirm='light']:hover
+{
+	border:1px solid #5b5bfa;
+    background-color:#efefff;
+    color:#5b5bfa;
+}
+
+QPushButton[Confirm='dark']
+{
+	border:none;
+    background-color:#5b5bfa;
+    color:#ffffff;
+}
+
+QPushButton[Confirm='dark']:hover
+{
+	border:1px solid #5b5bfa;
+    background-color:#333333;
+    color:#5b5bfa;
+}
+/*提交*/

@@ -35,14 +35,14 @@ private://初始化
 	//根据文件链接和保存路径，尝试添加一个下载文件
 	bool try_add_download_file(std::string& strLink, std::string& strPath);
 
-	//使用一个工作线程尝试新增一个分享文件
-	void thread_add_share_file(std::string& strRemark, std::string& strPath);
-
 	//处理接收到的信号，打开文件序号为FileSeq的文件所在的文件夹
 	void open_folder(int32_t FileSeq);
 
 	//处理接收到的信号，复制文件序号为FileSeq的文件的链接
 	void get_link(int32_t FileSeq);
+
+	//使用一个工作线程尝试新增一个分享文件
+	void thread_add_share_file(std::string& strRemark, std::string& strPath);
 
 	//循环运行的线程，调用文件模块获取下载任务
 	//然后发送给相关联的Peer请求下载
@@ -54,7 +54,7 @@ private://初始化
 
 	//计算文件的SHA1值，然后与实际的SHA1值比较
 	//结果一致表示下载完成，否则可能有问题
-	void sha1_check_thread(file::FileCtrl FileCtrl);
+	void thread_sha1_check(file::FileCtrl FileCtrl);
 signals://信号
 	//向文件管理系统添加一个文件/文件夹
 	void add_file(int32_t FileSeq);
@@ -70,6 +70,9 @@ signals://信号
 
 	//文件下载完成
 	void file_complete(int32_t FileSeq);
+
+	//移动指定文件到指定文件夹
+	void file_move_to(int32_t FileSeq, int32_t FileParent);
 private://各个模块
 	MoudleGui*					m_pMoudleGui;
 	MoudleNet*					m_pMoudleNet;

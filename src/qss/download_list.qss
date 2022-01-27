@@ -11,7 +11,7 @@ QFrame[Line='dark']
 /*分隔线*/
 
 /*选择按钮*/
-QPushButton[Button='unchoose_light'],[Button='unchoose_dark'],[Button='choose_light'],[Button='choose_dark']
+QPushButton[ButtonStyle='light'],[ButtonStyle='dark']
 {
 	font-family:"Microsoft YaHei";
 	font-size:20px;
@@ -19,25 +19,25 @@ QPushButton[Button='unchoose_light'],[Button='unchoose_dark'],[Button='choose_li
 	background-color:transparent;
 }
 
-QPushButton[Button='unchoose_light'],[Button='unchoose_dark']:hover
-{
-	color:#5b5bfa;
-}
-
-QPushButton[Button='choose_light'],[Button='choose_dark']
-{
-	border-bottom:2px solid #5b5bfa;
-    color:#5b5bfa;
-}
-
-QPushButton[Button='unchoose_light']
+QPushButton[ButtonStyle='light']
 {
     color:#727272;
 }
 
-QPushButton[Button='unchoose_dark']
+QPushButton[ButtonStyle='dark']
 {
     color:#ffffff;
+}
+
+QPushButton[ButtonStatus='unchoose']:hover
+{
+	color:#5b5bfa;
+}
+
+QPushButton[ButtonStatus='choose']
+{
+	border-bottom:2px solid #5b5bfa;
+    color:#5b5bfa;
 }
 /*选择按钮*/
 

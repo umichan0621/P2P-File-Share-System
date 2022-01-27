@@ -8,6 +8,7 @@
 #include <QWidget>
 #include "ui_frameless_widget.h"
 #include "ui_add_dialog.h"
+#include "ui_folder_choose_dialog.h"
 #include "ui_top_bar.h"
 #include "ui_left_bar.h"
 #include "ui_my_file.h"
@@ -33,8 +34,8 @@ namespace gui
 	public:
 		MainWidget();
 	public:
-		void init();
 		AddDialog* add_dialog();
+		FolderChooseDialog* folder_choose_dialog();
 		DownloadList* download_list();
 		ShareTree* share_tree();
 		MyFile* my_file();
@@ -44,10 +45,14 @@ namespace gui
 	private://Event override
 		void paintEvent(QPaintEvent* pEvent) override;
 		void resizeEvent(QResizeEvent* pEvent) override;
+	signals:
+		//打开FolderChooseDialog
+		void choose_folder();
 	private:
 		TopBar*				m_pTopBar;
 		LeftBar*			m_pLeftBar;
 		AddDialog*			m_pAddDialog;
+		FolderChooseDialog* m_pFolderChooseDialog;
 		MyFile*				m_pMyFile;
 		DownloadList*		m_pDownloadList;
 		ShareTree*			m_pShareTree;

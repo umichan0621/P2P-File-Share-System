@@ -18,12 +18,9 @@ namespace gui
 		m_pOpen(new QAction(this)),
 		m_pRename(new QAction(this)),
 		m_pDelete(new QAction(this)),
+		m_pUpload(new QAction(this)),
+		m_pMove(new QAction(this)),
 		m_pCurItem(nullptr)
-	{
-		init();
-	}
-
-	void FileListWidget::init()
 	{
 		setViewMode(QListView::ViewMode::IconMode);
 		setDragDropMode(QAbstractItemView::InternalMove);
@@ -37,19 +34,25 @@ namespace gui
 	void FileListWidget::init_menu()
 	{
 
+		m_pAdd->setText(QString::fromLocal8Bit("X添加文件"));
+		m_pUpload->setText(QString::fromLocal8Bit("X添加分享文件"));
 		m_pNewFolder->setText(QString::fromLocal8Bit("新建文件夹"));
-		m_pAdd->setText(QString::fromLocal8Bit("添加文件"));
-		m_pShare->setText(QString::fromLocal8Bit("分享"));
+
 		m_pOpen->setText(QString::fromLocal8Bit("打开"));
 		m_pRename->setText(QString::fromLocal8Bit("重命名"));
 		m_pDelete->setText(QString::fromLocal8Bit("删除"));
+		m_pShare->setText(QString::fromLocal8Bit("X分享"));
+		m_pMove->setText(QString::fromLocal8Bit("移动到"));
 
 		m_pBlankMenu->addAction(m_pAdd);
+		m_pBlankMenu->addAction(m_pUpload);
 		m_pBlankMenu->addAction(m_pNewFolder);
 		m_pItemMenu->addAction(m_pOpen);
 		m_pItemMenu->addAction(m_pShare);
 		m_pItemMenu->addAction(m_pRename);
 		m_pItemMenu->addAction(m_pDelete);
+		m_pItemMenu->addAction(m_pMove);
+
 
 	}
 
@@ -84,11 +87,19 @@ namespace gui
 		//连接rename事件
 		connect(m_pRename, &QAction::triggered, this, [&]()
 			{
-				LOG_ERROR << "RENAME";
 				IconComponent* pCurWidget = (IconComponent*)itemWidget(m_pCurItem);
 				if (nullptr != pCurWidget)
 				{
 					pCurWidget->rename_start();
+				}
+			});
+		//连接move事件
+		connect(m_pMove, &QAction::triggered, this, [&]()
+			{
+				IconComponent* pCurWidget = (IconComponent*)itemWidget(m_pCurItem);
+				if (nullptr != pCurWidget)
+				{
+					emit(move_file(pCurWidget->file_seq()));
 				}
 			});
 		connect(m_pShare, &QAction::triggered, this, [&]()

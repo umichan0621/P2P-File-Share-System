@@ -5,27 +5,23 @@
 #include <base/logger/logger.h>
 #include <base/config.hpp>
 
-#define CONNECT_BUTTON(_BUTTON,_FUNC) connect(_BUTTON, &QPushButton::clicked, this, _FUNC)
-
 namespace gui
 {
 	MainWidget::MainWidget() :
 		m_pTopBar(new TopBar(this)),
 		m_pLeftBar(new LeftBar(this)),
 		m_pAddDialog(new AddDialog(this)),
+		m_pFolderChooseDialog(new FolderChooseDialog(this)),
 		m_pMyFile(new MyFile(this)),
 		m_pDownloadList(new DownloadList(this)),
 		m_pShareTree(new ShareTree(this)),
 		m_CurPage(PAGE_NULL),
 		m_bIsMax(false),
-		m_strStyle("dark"){}
-
-	void MainWidget::init()
+		m_strStyle("dark")
 	{
 		m_pAddDialog->raise();
+		m_pFolderChooseDialog->raise();
 		set_boundary(8, 32);
-		//setMouseTracking(true);
-		//QWidget* pTemp
 		//QGraphicsDropShadowEffect* shadow = new QGraphicsDropShadowEffect(this);
 		////设置阴影距离
 		//shadow->setOffset(0, 0);
@@ -37,9 +33,6 @@ namespace gui
 		//setGraphicsEffect(shadow);
 		////给垂直布局器设置边距(此步很重要, 设置宽度为阴影的宽度)
 		//pVLayout->setMargin(8);
-		//m_pTopBar->hide();
-		//pWorkingArea->hide();
-		//m_pShareList->setStyleSheet("background-color:#444444");
 		setMinimumWidth(640);
 		setMinimumHeight(440);
 		resize(1280, 720);
@@ -47,6 +40,7 @@ namespace gui
 		m_pDownloadList->hide();
 		m_pShareTree->hide();
 		m_pAddDialog->hide();
+		m_pFolderChooseDialog->hide();
 		m_pMyFile->show();
 		m_CurPage = PAGE_MY_FILE;
 		m_pDownloadList->hide();
@@ -55,14 +49,13 @@ namespace gui
 		Background.open(QFile::ReadOnly);
 		setStyleSheet(Background.readAll());
 		set_style();
-
 	}
 
 	void MainWidget::init_slots()
 	{
 		//右上角按钮
 		//最小化/还原
-		CONNECT_BUTTON(m_pTopBar->m_pMin, [&]()
+		connect(m_pTopBar->m_pMin, &QPushButton::clicked, this, [&]()
 			{
 				if (windowState() != Qt::WindowMinimized)
 				{
@@ -70,7 +63,7 @@ namespace gui
 				}
 			});
 		//最大化/还原
-		CONNECT_BUTTON(m_pTopBar->m_pMax, [&]() 
+		connect(m_pTopBar->m_pMax, &QPushButton::clicked, this, [&]()
 			{
 				if (false == m_bIsMax)
 				{
@@ -83,13 +76,13 @@ namespace gui
 				m_bIsMax = !m_bIsMax;
 			});
 		//关闭窗口
-		CONNECT_BUTTON(m_pTopBar->m_pClose, [&]() 
+		connect(m_pTopBar->m_pClose, &QPushButton::clicked, this, [&]()
 			{
 				close(); 
 			});
 		//左侧按钮
-		//切换到Home页面
-		CONNECT_BUTTON(m_pLeftBar->m_pMyFile, [&]()
+		//切换到My FIle页面
+		connect(m_pLeftBar->m_pMyFile, &QPushButton::clicked, this, [&]()
 			{
 				if (PAGE_MY_FILE != m_CurPage)
 				{
@@ -101,7 +94,7 @@ namespace gui
 
 			});
 		//切换到Download页面
-		CONNECT_BUTTON(m_pLeftBar->m_pDownload, [&]() 
+		connect(m_pLeftBar->m_pDownload, &QPushButton::clicked, this, [&]()
 			{
 				if (PAGE_DOWNLOAD != m_CurPage)
 				{
@@ -113,7 +106,7 @@ namespace gui
 
 			});
 		//切换到Share页面
-		CONNECT_BUTTON(m_pLeftBar->m_pShare, [&]()
+		connect(m_pLeftBar->m_pShare, &QPushButton::clicked, this, [&]()
 			{
 				if (PAGE_SHARE != m_CurPage)
 				{
@@ -123,7 +116,8 @@ namespace gui
 					m_CurPage = PAGE_SHARE;
 				}
 			});
-		CONNECT_BUTTON(m_pLeftBar->m_pAdd, [&]()
+
+		connect(m_pLeftBar->m_pAdd, &QPushButton::clicked, this, [&]()
 			{
 				m_pAddDialog->set_style(m_strStyle, "ch");
 				m_pAddDialog->set_path_download(QString::fromStdString(g_pConfig->path_download()));
@@ -143,12 +137,20 @@ namespace gui
 			});
 
 
-		CONNECT_BUTTON(m_pLeftBar->m_pSetting, [&]() 
+		connect(m_pLeftBar->m_pSetting, &QPushButton::clicked, this, [&]()
 			{
 				set_style();
 			});
 
-	}
+		//收到移动文件的信号，调出对话框
+		connect(m_pMyFile, &MyFile::file_move, this, [&](int32_t FileSeq)
+			{
+				m_pFolderChooseDialog->set_size(400,300,width(),height());
+				m_pFolderChooseDialog->show_dialog(m_pMyFile->folder_info(), FileSeq);
+
+			});
+
+		}
 
 	void MainWidget::set_style()
 	{
@@ -169,13 +171,19 @@ namespace gui
 		m_pDownloadList->set_style(m_strStyle, m_strLanguage);
 		m_pShareTree->set_style(m_strStyle, m_strLanguage);
 		m_pAddDialog->set_style(m_strStyle, m_strLanguage);
-		
+		m_pFolderChooseDialog->set_style(m_strStyle, m_strLanguage);
+
 		update();
 	}
 
 	AddDialog* MainWidget::add_dialog()
 	{
 		return m_pAddDialog;
+	}
+	
+	FolderChooseDialog* MainWidget::folder_choose_dialog()
+	{
+		return m_pFolderChooseDialog;
 	}
 
 	DownloadList* MainWidget::download_list()

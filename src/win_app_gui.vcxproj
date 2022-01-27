@@ -174,6 +174,7 @@
     <ClCompile Include="module_gui\ui_my_file.cpp" />
     <ClCompile Include="module_gui\ui_left_bar.cpp" />
     <ClCompile Include="module_gui\ui_main_widget.cpp" />
+    <ClCompile Include="module_gui\ui_folder_choose_dialog.cpp" />
     <ClCompile Include="module_gui\ui_share_component.cpp" />
     <ClCompile Include="module_gui\ui_share_tree.cpp" />
     <ClCompile Include="module_gui\ui_top_bar.cpp" />
@@ -233,6 +234,7 @@
     <QtMoc Include="module_gui\ui_file_manager.h" />
     <QtMoc Include="module_gui\ui_list_component.h" />
     <QtMoc Include="module_gui\ui_share_component.h" />
+    <QtMoc Include="module_gui\ui_folder_choose_dialog.h" />
     <ClInclude Include="module_handler\handler_base.h" />
     <ClInclude Include="module_handler\handler_file.h" />
     <ClInclude Include="module_handler\handler_interface.h" />

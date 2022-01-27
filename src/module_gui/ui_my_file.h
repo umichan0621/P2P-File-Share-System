@@ -17,6 +17,13 @@
 
 namespace gui
 {
+	struct Folder
+	{
+		int32_t				FileSeq;
+		QString				FileName;
+		std::vector<Folder> SubFolder;
+	};
+
 	class PathButton :public QPushButton
 	{
 		Q_OBJECT
@@ -48,12 +55,14 @@ namespace gui
 	public:
 		MyFile(QWidget* Parent = Q_NULLPTR);
 		void set_style(const QString& Style, const QString& Language);
+
+		Folder folder_info();
+	private:
+
+		Folder sub_folder(int32_t FileSeq);
 		void load_qss();
 
-	private:
-		void init();
 		void init_slots();
-
 
 		//显示当前目录下的指定文件
 		void show_file(int32_t FileSeq);
@@ -63,19 +72,30 @@ namespace gui
 
 		//刷新当前目录下的文件
 		void refresh();
-	private:
+
+		//递归删除所有子文件/文件夹
+		void delete_folder(int32_t FileSeq);
+
+		//重载大小调整事件
 		void resizeEvent(QResizeEvent* pEvent);
 	signals:
 		void add_file(int32_t FileSeq);
+		void delete_file(int32_t FileSeq);
+
+		//尝试移动指定文件，弹出对话框
+		void file_move(int32_t FileSeq);
+
+		//指定文件移动到指定文件夹完毕，更新Gui
+		void file_move_to(int32_t FileSeq, int32_t FileParent);
 	private:
-		int32_t					m_pCurFolder;
-		QFrame*					m_pLineUp;
-		QFrame*					m_pLineLow;
-		FileListWidget*			m_pFileManager;
-		QPushButton*			m_pBack;
-		QPushButton*			m_pNext;
-		QWidget*				m_pChoosePath;
-		QHBoxLayout* m_pChoosePathLayout;
+		int32_t						m_pCurFolder;
+		QFrame*						m_pLineUp;
+		QFrame*						m_pLineLow;
+		FileListWidget*				m_pFileManager;
+		QPushButton*				m_pBack;
+		QPushButton*				m_pNext;
+		QWidget*					m_pChoosePath;
+		QHBoxLayout*				m_pChoosePathLayout;
 		std::mutex					m_MyFileMutex;
 		FolderMap					m_FolderMap;
 		FileMap						m_FileMap;
