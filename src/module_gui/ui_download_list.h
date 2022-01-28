@@ -41,7 +41,7 @@ namespace gui
 	private:
 		void resizeEvent(QResizeEvent* pEvent);
 	private:
-		QFrame*				m_pLineLow;
+		QFrame*				m_pLine;
 		QListWidget*		m_pListWidget;
 		QPushButton*		m_pDownloading;
 		QPushButton*		m_pPause;

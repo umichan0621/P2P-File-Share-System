@@ -27,6 +27,7 @@ QHeaderView
     font-size:20px;
     background:transparent;
 }
+
 QHeaderView[TreeWidget='light']
 {
     border-bottom:2px solid #e5e5e5;
@@ -36,17 +37,20 @@ QHeaderView[TreeWidget='dark']
 {
     border-bottom:2px solid #494949;
 }
+
 QHeaderView::section[TreeWidget='light']
 {
     background:transparent;
     color:#494949;
 }
+
 QHeaderView::section[TreeWidget='dark']
 {
     background:transparent;
     color:#e5e5e5;
 }
 /*Header样式*/
+
 /*Item样式*/
 QTreeWidget::item
 {
@@ -60,6 +64,7 @@ QTreeWidget::item[TreeWidget='light']:hover
 {
     background:#ecf1ff;
 }
+
 QTreeWidget::item[TreeWidget='light']:selected
 {
     color:#5b5bfa;
@@ -69,6 +74,7 @@ QTreeWidget::item[TreeWidget='dark']:hover
 {
     background:#444444;
 }
+
 QTreeWidget::item[TreeWidget='dark']:selected
 {
     color:#ffffff;
@@ -79,15 +85,10 @@ QTreeWidget::branch[TreeWidget='light']:hover
     background:#ecf1ff;
 }
 
-
 QTreeWidget::branch[TreeWidget='dark']:hover
 {
     background:#444444;
 }
-
-
-
-
 /*Item样式*/
 /*TreeWidget样式*/
 
@@ -202,14 +203,7 @@ QCheckBox::indicator:checked
     background:#5b5bfa;
     margin-right:2;
     color:red;
-
 	image: url(:/Images/checkBoxCheckedPressed);
 }
 /*CheckBox*/
 /*文件名-按钮组件*/
-
-
- 
-
-
-

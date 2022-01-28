@@ -6,7 +6,7 @@
 #include <base/config.hpp>
 #include <base/logger/logger.h>
 #include <module_db/database.h>
-
+#define SET_PROPERTY(QOBJ,PROPERTY,STYLE) QOBJ->setProperty(PROPERTY, STYLE);style()->unpolish(QOBJ);style()->polish(QOBJ)
 constexpr int32_t ROW_HEIGHT = 35;
 
 namespace gui
@@ -16,8 +16,6 @@ namespace gui
 		m_pTree(new TreeWidget(this)),
 		m_pCurGroup(nullptr)
 	{
-		//为子组件读取样式，避免重复读文件
-		FileNameGroup::load_qss();
 		//设置布局
 		QVBoxLayout* pLayout = new QVBoxLayout(this);
 		pLayout->addWidget(m_pTree);
@@ -39,11 +37,15 @@ namespace gui
 		m_pTree->setFocusPolicy(Qt::NoFocus);                          //去除选中的虚线效果
 		m_pTree->hideColumn(4);
 
-		//
+		QFile qssFile("qss/share_tree.qss");
+		qssFile.open(QFile::ReadOnly);
+		QString qssStyle = qssFile.readAll();
+		m_pTree->setStyleSheet(qssStyle);
+		m_pTree->header()->setStyleSheet(qssStyle);
 		 //滚动条样式
-		QFile QssScrollFile("qss/scrollbar.qss");
-		QssScrollFile.open(QFile::ReadOnly);
-		m_pTree->verticalScrollBar()->setStyleSheet(QssScrollFile.readAll());
+		QFile qssScrollBar("qss/scrollbar.qss");
+		qssScrollBar.open(QFile::ReadOnly);
+		m_pTree->verticalScrollBar()->setStyleSheet(qssScrollBar.readAll());
 		init_slots();
 	}
 
@@ -51,11 +53,11 @@ namespace gui
 	{
 		//连接item离开事件
 		connect(m_pTree, &TreeWidget::itemLeft, m_pTree,
-			[&](QTreeWidgetItem* pCurItem)
+			[&](QTreeWidgetItem* m_pCurItem)
 			{
-				if (nullptr != pCurItem)
+				if (nullptr != m_pCurItem)
 				{
-					FileNameGroup* pGroup = (FileNameGroup*)m_pTree->itemWidget(pCurItem, 0);
+					FileNameGroup* pGroup = (FileNameGroup*)m_pTree->itemWidget(m_pCurItem, 0);
 					if (nullptr != pGroup)
 					{
 						pGroup->hide_button();
@@ -65,11 +67,11 @@ namespace gui
 			});
 		//连接item进入事件
 		connect(m_pTree, &TreeWidget::itemEntered, m_pTree,
-			[&](QTreeWidgetItem* pCurItem)
+			[&](QTreeWidgetItem* m_pCurItem)
 			{
-				if (nullptr != pCurItem)
+				if (nullptr != m_pCurItem)
 				{
-					FileNameGroup* pGroup = (FileNameGroup*)m_pTree->itemWidget(pCurItem, 0);
+					FileNameGroup* pGroup = (FileNameGroup*)m_pTree->itemWidget(m_pCurItem, 0);
 					if (nullptr != pGroup)
 					{
 						pGroup->show_button();
@@ -78,9 +80,9 @@ namespace gui
 			});
 		//连接item单击事件
 		connect(m_pTree, &QTreeWidget::itemClicked, m_pTree,
-			[&](QTreeWidgetItem* pCurItem, int Col)
+			[&](QTreeWidgetItem* m_pCurItem, int Col)
 			{
-				QCheckBox* pCurCheckBox = ((FileNameGroup*)m_pTree->itemWidget(pCurItem, 0))->m_pCheckBox;
+				QCheckBox* pCurCheckBox = ((FileNameGroup*)m_pTree->itemWidget(m_pCurItem, 0))->m_pCheckBox;
 				if (Qt::CheckState::Checked == pCurCheckBox->checkState())
 				{
 					pCurCheckBox->setCheckState(Qt::CheckState::Unchecked);
@@ -142,18 +144,18 @@ namespace gui
 		connect(pGroup->m_pCheckBox, &QCheckBox::stateChanged, m_pTree,
 			[&](int32_t State)
 			{
-				QTreeWidgetItem* pCurItem = m_pTree->itemCur();
-				if (nullptr == pCurItem)
+				QTreeWidgetItem* m_pCurItem = m_pTree->itemCur();
+				if (nullptr == m_pCurItem)
 				{
 					return;
 				}
 				if (Qt::CheckState::Checked == State)
 				{
-					pCurItem->setSelected(true);//设置选中状态
+					m_pCurItem->setSelected(true);//设置选中状态
 					//给所有子Item设置
-					for (int32_t i = 0; i < pCurItem->childCount(); ++i)
+					for (int32_t i = 0; i < m_pCurItem->childCount(); ++i)
 					{
-						QTreeWidgetItem* pCurChild = pCurItem->child(i);
+						QTreeWidgetItem* pCurChild = m_pCurItem->child(i);
 						QCheckBox* pCurCheckBox = ((FileNameGroup*)m_pTree->itemWidget(pCurChild, 0))->m_pCheckBox;
 						pCurCheckBox->setCheckState(Qt::CheckState::Checked);
 						pCurChild->setSelected(true);
@@ -161,16 +163,16 @@ namespace gui
 				}
 				else if (Qt::CheckState::Unchecked == State)
 				{
-					pCurItem->setSelected(false);
-					for (int32_t i = 0; i < pCurItem->childCount(); ++i)
+					m_pCurItem->setSelected(false);
+					for (int32_t i = 0; i < m_pCurItem->childCount(); ++i)
 					{
-						QTreeWidgetItem* pCurChild = pCurItem->child(i);
+						QTreeWidgetItem* pCurChild = m_pCurItem->child(i);
 						QCheckBox* pCurCheckBox = ((FileNameGroup*)m_pTree->itemWidget(pCurChild, 0))->m_pCheckBox;
 						pCurCheckBox->setCheckState(Qt::CheckState::Unchecked);
 						pCurChild->setSelected(false);
 					}
 					//给父Item设置
-					QTreeWidgetItem* pParent = pCurItem->parent();
+					QTreeWidgetItem* pParent = m_pCurItem->parent();
 					if (nullptr != pParent)
 					{
 						QCheckBox* pCurCheckBox = ((FileNameGroup*)m_pTree->itemWidget(pParent, 0))->m_pCheckBox;
@@ -194,12 +196,12 @@ namespace gui
 				std::unique_lock<std::mutex> Lock(m_Mutex);
 				if (0 != m_pItemMap.count(FileSeq))
 				{
-					QTreeWidgetItem* pCurItem = m_pItemMap[FileSeq];
+					QTreeWidgetItem* m_pCurItem = m_pItemMap[FileSeq];
 					m_pItemMap.erase(FileSeq);
 
-					if (nullptr != pCurItem)
+					if (nullptr != m_pCurItem)
 					{
-						delete pCurItem;
+						delete m_pCurItem;
 					}
 					m_pTree->reset();
 				}
@@ -218,24 +220,12 @@ namespace gui
 			<< QString::fromLocal8Bit("已上传流量")
 			<< QString::fromLocal8Bit("备注")
 			<< "FileSeq");
-		//设置滚动条样式
-		QScrollBar* pScrollBar = m_pTree->verticalScrollBar();
-		pScrollBar->setProperty("Style", Style);
-		style()->unpolish(pScrollBar);
-		style()->polish(pScrollBar);
 
-		QFile QssFile("qss/share_tree.qss");
-		QssFile.open(QFile::ReadOnly);
-		QString QssStyle = QssFile.readAll();
-		m_pTree->setStyleSheet(QssStyle);
-		m_pTree->setProperty("TreeWidget", Style);
-		style()->unpolish(m_pTree);
-		style()->polish(m_pTree);
-		//设置Header样式
-		m_pTree->header()->setStyleSheet(QssStyle);
-		m_pTree->header()->setProperty("TreeWidget", Style);
-		style()->unpolish(m_pTree->header());
-		style()->polish(m_pTree->header());
+		QScrollBar* pScrollBar = m_pTree->verticalScrollBar();
+		SET_PROPERTY(pScrollBar, "Style", Style);
+		SET_PROPERTY(m_pTree, "TreeWidget", Style);
+		SET_PROPERTY(m_pTree->header(), "TreeWidget", Style);
+
 		//遍历Item然后设置样式
 		QTreeWidgetItemIterator pIt(m_pTree);
 		while (*pIt) 

@@ -15,7 +15,7 @@ namespace gui
 		m_pDownloading(new QPushButton(this)),
 		m_pPause(new QPushButton(this)),
 		m_pComplete(new QPushButton(this)),
-		m_pLineLow(new QFrame(this)),
+		m_pLine(new QFrame(this)),
 		m_pListWidget(new QListWidget(this))
 	{
 		//初始化组件
@@ -31,27 +31,37 @@ namespace gui
 		//设置可多选
 		m_pListWidget->setSelectionMode(QAbstractItemView::ContiguousSelection);
 		//分隔线设置
-		m_pLineLow->setFrameShape(QFrame::HLine);
-		m_pLineLow->lower();
-		//设置槽函数
-		init_slots();
-		setStyleSheet("background-color:transparent");
-		QFile QssFile("qss/download_list.qss");
-		QssFile.open(QFile::ReadOnly);
-		QString QssStyle = QssFile.readAll();
+		m_pLine->setFrameShape(QFrame::HLine);
+		m_pLine->lower();
+
+		QFile qssFile("qss/download_list.qss");
+		qssFile.open(QFile::ReadOnly);
+		QString qssStyle = qssFile.readAll();
+		QFile qssButton("qss/button_style.qss");
+		qssButton.open(QFile::ReadOnly);
+		QString qssButtonStyle = qssButton.readAll();
+		QFile qssLine("qss/split_line_style.qss");
+		qssLine.open(QFile::ReadOnly);
+		QString qssLineStyle = qssLine.readAll();
+
+		setStyleSheet(qssStyle);
 		//设置List样式
-		m_pListWidget->setStyleSheet(QssStyle);
+		m_pListWidget->setStyleSheet(qssStyle);
 		//分隔线样式
-		m_pLineLow->setStyleSheet(QssStyle);
+		m_pLine->setStyleSheet(qssLineStyle);
 		//设置按钮样式
-		m_pPause->setStyleSheet(QssStyle);
-		m_pComplete->setStyleSheet(QssStyle);
-		m_pDownloading->setStyleSheet(QssStyle);
+		m_pPause->setStyleSheet(qssButtonStyle);
+		m_pComplete->setStyleSheet(qssButtonStyle);
+		m_pDownloading->setStyleSheet(qssButtonStyle);
+		m_pPause->setProperty("FontSize", "20");
+		m_pComplete->setProperty("FontSize", "20");
+		m_pDownloading->setProperty("FontSize", "20");
 		//滚动条样式
 		QFile QssScrollFile("qss/scrollbar.qss");
 		QssScrollFile.open(QFile::ReadOnly);
 		m_pListWidget->verticalScrollBar()->setStyleSheet(QssScrollFile.readAll());
-
+		//设置槽函数
+		init_slots();
 	}
 
 	void DownloadList::init_slots()
@@ -319,7 +329,7 @@ namespace gui
 
 	void DownloadList::resizeEvent(QResizeEvent* pEvent)
 	{
-		m_pLineLow->setGeometry(13, 50, width() - 35, 2);
+		m_pLine->setGeometry(13, 50, width() - 35, 2);
 		m_pListWidget->setGeometry(3, 52, width() - 6, height() - 52);
 	}
 }

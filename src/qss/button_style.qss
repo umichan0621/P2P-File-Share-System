@@ -1,0 +1,113 @@
+/*取消*/
+QPushButton[Cancel='light'],[Cancel='dark']
+{
+	font-family:"Microsoft YaHei";
+	font-size:13px;
+	border-radius:4px;
+}
+
+QPushButton[Cancel='light']
+{
+	border:1px solid #cfcfcf;
+    background-color:#ffffff;
+    color:#606266;
+}
+
+QPushButton[Cancel='light']:hover
+{
+	border:1px solid #5b5bfa;
+    background-color:#efefff;
+    color:#5b5bfa;
+}
+
+QPushButton[Cancel='dark']
+{
+	border:none;
+    background-color:#5b5b5b;
+    color:#ffffff;
+}
+
+QPushButton[Cancel='dark']:hover
+{
+	border:1px solid #5b5bfa;
+    background-color:#333333;
+    color:#5b5bfa;
+}
+/*取消*/
+
+/*确认或提交*/
+QPushButton[Confirm='light'],[Confirm='dark']
+{
+	font-family:"Microsoft YaHei";
+	font-size:13px;
+	font-weight:bold;
+	border-radius:4px;
+}
+
+QPushButton[Confirm='light']
+{
+	border:none;
+    background-color:#5b5bfa;
+    color:#ffffff;
+}
+
+QPushButton[Confirm='light']:hover
+{
+	border:1px solid #5b5bfa;
+    background-color:#efefff;
+    color:#5b5bfa;
+}
+
+QPushButton[Confirm='dark']
+{
+	border:none;
+    background-color:#5b5bfa;
+    color:#ffffff;
+}
+
+QPushButton[Confirm='dark']:hover
+{
+	border:1px solid #5b5bfa;
+    background-color:#333333;
+    color:#5b5bfa;
+}
+/*确认或提交*/
+
+/*选择按钮*/
+QPushButton[ButtonStyle='light'],[ButtonStyle='dark']
+{
+	font-family:"Microsoft YaHei";
+	border:none;
+	background-color:transparent;
+}
+
+QPushButton[FontSize='20']
+{
+    font-size:20px;
+}
+
+QPushButton[FontSize='15']
+{
+    font-size:15px;
+}
+QPushButton[ButtonStyle='light']
+{
+    color:#727272;
+}
+
+QPushButton[ButtonStyle='dark']
+{
+    color:#ffffff;
+}
+
+QPushButton[ButtonStatus='unchoose']:hover
+{
+	color:#5b5bfa;
+}
+
+QPushButton[ButtonStatus='choose']
+{
+	border-bottom:2px solid #5b5bfa;
+    color:#5b5bfa;
+}
+/*选择按钮*/

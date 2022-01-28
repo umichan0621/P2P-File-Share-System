@@ -13,6 +13,7 @@
 #include <QPushButton>
 #include <QListWidget>
 #include <QWidget>
+#include <QMessageBox>
 
 namespace gui
 {
@@ -21,6 +22,7 @@ namespace gui
 		Q_OBJECT
 	public:
 		FileListWidget(QWidget* Parent = Q_NULLPTR);
+		void set_style(const QString& Style, const QString& Language);
 	private:
 		void init_menu();
 		void init_slots();
@@ -44,6 +46,7 @@ namespace gui
 		QAction*			m_pRename;
 		QAction*			m_pDelete;
 		QAction*			m_pMove;
+		QMessageBox*		m_pDeleteMessageBox;
 		QListWidgetItem*	m_pCurItem;
 	};
 }

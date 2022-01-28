@@ -1,0 +1,11 @@
+/*分割线*/
+QFrame[Line='light']
+{
+	border-top:2px solid #e4e7ed;
+}
+
+QFrame[Line='dark']
+{
+	border-top:2px solid #4a4a4a;
+}
+/*分割线*/

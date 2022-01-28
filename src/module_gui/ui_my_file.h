@@ -60,7 +60,6 @@ namespace gui
 	private:
 
 		Folder sub_folder(int32_t FileSeq);
-		void load_qss();
 
 		void init_slots();
 
@@ -89,7 +88,7 @@ namespace gui
 		void file_move_to(int32_t FileSeq, int32_t FileParent);
 	private:
 		int32_t						m_pCurFolder;
-		QFrame*						m_pLineUp;
+		QFrame*						m_pLineHigh;
 		QFrame*						m_pLineLow;
 		FileListWidget*				m_pFileManager;
 		QPushButton*				m_pBack;

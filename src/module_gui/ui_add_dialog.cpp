@@ -14,7 +14,7 @@ namespace gui
 		m_pAddFile(new QPushButton(m_pDialog)),
 		m_pAddShare(new QPushButton(m_pDialog)),
 		m_pAddPeer(new QPushButton(m_pDialog)),
-		m_pLineLow(new QFrame(m_pDialog)),
+		m_pLine(new QFrame(m_pDialog)),
 		m_pBottom(new QWidget(m_pDialog)),
 		m_pCancel(new QPushButton(m_pBottom)),
 		m_pSubmit(new QPushButton(m_pBottom)),
@@ -35,8 +35,8 @@ namespace gui
 		m_CurChoose(ADD_NULL)
 	{
 		//分隔线设置
-		m_pLineLow->setFrameShape(QFrame::HLine);
-		m_pLineLow->lower();
+		m_pLine->setFrameShape(QFrame::HLine);
+		m_pLine->lower();
 		//设置按钮
 		m_pSubmit->setCursor(QCursor(Qt::PointingHandCursor));
 		m_pCancel->setCursor(QCursor(Qt::PointingHandCursor));
@@ -52,7 +52,7 @@ namespace gui
 		m_pAddFile->setGeometry(Bounadry, 20, 80, 32);
 		m_pAddShare->setGeometry(Bounadry + 80, 20, 80, 32);
 		m_pAddPeer->setGeometry(Bounadry + 160, 20, 80, 32);
-		m_pLineLow->setGeometry(20, 50, 560, 2);
+		m_pLine->setGeometry(20, 50, 560, 2);
 		//下侧，高度占200-270
 		m_pBottom->setGeometry(0, Height - 70, Width, 70);
 		m_pCancel->setGeometry(Width - 160, 20, 60, 28);
@@ -72,32 +72,30 @@ namespace gui
 		m_pShareFilePath->setGeometry(Bounadry, 100, 100, 26);
 		//Peer组件
 		m_pPeer->setGeometry(0, 50, Width, 150);
-		//设置样式
-		m_pDownload->setStyleSheet("background-color:transparent;");
-		m_pShare->setStyleSheet("background-color:transparent;");
-		m_pPeer->setStyleSheet("background-color:transparent;");
+
 		QFile QssTotal("qss/dialog.qss");
 		QssTotal.open(QFile::ReadOnly);
 		QString qssStyle = QssTotal.readAll();
+		QFile qssButton("qss/button_style.qss");
+		qssButton.open(QFile::ReadOnly);
+		QString qssButtonStyle = qssButton.readAll();
+		QFile TextEditScrollBar("qss/scrollbar.qss");
+		TextEditScrollBar.open(QFile::ReadOnly);
+		QString qssScrollBarStyle = TextEditScrollBar.readAll();
+		QFile qssLine("qss/split_line_style.qss");
+		qssLine.open(QFile::ReadOnly);
+		QString qssLineStyle = qssLine.readAll();
+		//设置样式
+		m_pDownload->setStyleSheet(qssStyle);
+		m_pShare->setStyleSheet(qssStyle);
+		m_pPeer->setStyleSheet(qssStyle);
 		//对话框背景
 		m_pDialog->setStyleSheet(qssStyle);
 		//对话框底部
 		m_pBottom->setStyleSheet(qssStyle);
-		//分隔线
-		m_pLineLow->setStyleSheet(qssStyle);
-		//设置取消键
-		m_pCancel->setStyleSheet(qssStyle);
-		//设置提交按钮样式
-		m_pSubmit->setStyleSheet(qssStyle);
 		//设置多行输入框
 		m_pDownloadTextEdit->setStyleSheet(qssStyle);
 		m_pShareTextEdit->setStyleSheet(qssStyle);
-		//设置多行输入框滚动条
-		QFile TextEditScrollBar("qss/scrollbar.qss");
-		TextEditScrollBar.open(QFile::ReadOnly);
-		QString QssTextEditScrollBar = TextEditScrollBar.readAll();
-		m_pDownloadTextEdit->verticalScrollBar()->setStyleSheet(QssTextEditScrollBar);
-		m_pShareTextEdit->verticalScrollBar()->setStyleSheet(QssTextEditScrollBar);
 		//设置单行输入框
 		m_pDownloadLineEdit->setStyleSheet(qssStyle);
 		m_pShareLineEdit->setStyleSheet(qssStyle);
@@ -107,12 +105,23 @@ namespace gui
 		//设置字体
 		m_pDownloadSavePath->setStyleSheet(qssStyle);
 		m_pShareFilePath->setStyleSheet(qssStyle);
+		//分隔线
+		m_pLine->setStyleSheet(qssLineStyle);
+		//设置多行输入框滚动条
+		m_pDownloadTextEdit->verticalScrollBar()->setStyleSheet(qssScrollBarStyle);
+		m_pShareTextEdit->verticalScrollBar()->setStyleSheet(qssScrollBarStyle);
+		//设置取消键
+		m_pCancel->setStyleSheet(qssButtonStyle);
+		//设置提交按钮样式
+		m_pSubmit->setStyleSheet(qssButtonStyle);
 		//设置按钮
-		m_pAddFile->setStyleSheet(qssStyle);
-		m_pAddShare->setStyleSheet(qssStyle);
-		m_pAddPeer->setStyleSheet(qssStyle);
+		m_pAddFile->setStyleSheet(qssButtonStyle);
+		m_pAddShare->setStyleSheet(qssButtonStyle);
+		m_pAddPeer->setStyleSheet(qssButtonStyle);
+		m_pAddFile->setProperty("FontSize", "15");
+		m_pAddShare->setProperty("FontSize", "15");
+		m_pAddPeer->setProperty("FontSize", "15");
 		//初始化槽函数
-
 		init_slots();
 	}
 
@@ -159,9 +168,9 @@ namespace gui
 		//设置控件属性并刷新
 		SET_PROPERTY(m_pDialog, "Background", Style);
 		SET_PROPERTY(m_pBottom, "Bottom", Style);
-		SET_PROPERTY(m_pLineLow, "Line", Style);
+		SET_PROPERTY(m_pLine, "Line", Style);
 		SET_PROPERTY(m_pCancel, "Cancel", Style);
-		SET_PROPERTY(m_pSubmit, "Submit", Style);
+		SET_PROPERTY(m_pSubmit, "Confirm", Style);
 		SET_PROPERTY(m_pDownloadTextEdit, "TextEdit", Style);
 		SET_PROPERTY(m_pShareTextEdit, "TextEdit", Style);
 		SET_PROPERTY(m_pDownloadTextEdit->verticalScrollBar(), "Style", Style);

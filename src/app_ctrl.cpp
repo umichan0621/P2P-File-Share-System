@@ -307,7 +307,6 @@ void AppCtrl::init_file()
 			}
 			else
 			{
-				LOG_ERROR << "ADD OK";
 				pFileCtrl->set_file_seq(FileSeq);
 				pFileCtrl->set_sha1(SHA1Struct);
 				g_pFileManager->add_download_file(pFileCtrl);

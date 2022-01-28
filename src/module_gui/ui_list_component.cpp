@@ -52,6 +52,11 @@ namespace gui
 		return m_FileSeq;
 	}
 
+	QString IconComponent::file_name()
+	{
+		return m_strFileName;
+	}
+
 	void IconComponent::rename_start()
 	{
 		m_pRename->show();

@@ -1,52 +1,14 @@
-/*分隔线*/
-QFrame[Line='light']
+/*QListWidget相关*/
+QWidget
 {
-	border-top:2px solid #e5e5e5;
-}
-
-QFrame[Line='dark']
-{
-	border-top:2px solid #494949;
-}
-/*分隔线*/
-
-/*选择按钮*/
-QPushButton[ButtonStyle='light'],[ButtonStyle='dark']
-{
-	font-family:"Microsoft YaHei";
-	font-size:20px;
-	border:none;
 	background-color:transparent;
 }
-
-QPushButton[ButtonStyle='light']
-{
-    color:#727272;
-}
-
-QPushButton[ButtonStyle='dark']
-{
-    color:#ffffff;
-}
-
-QPushButton[ButtonStatus='unchoose']:hover
-{
-	color:#5b5bfa;
-}
-
-QPushButton[ButtonStatus='choose']
-{
-	border-bottom:2px solid #5b5bfa;
-    color:#5b5bfa;
-}
-/*选择按钮*/
-
-/*QListWidget相关*/
 
 QListWidget
 {
     border:none;
 }
+
 QListWidget::item
 {
     border:1px solid #555555;

@@ -3,7 +3,6 @@
 #include <QHBoxLayout>
 
 constexpr int32_t ROW_HEIGHT = 35;
-QString gui::FileNameGroup::m_qssStyle = "";
 
 namespace gui
 {
@@ -14,13 +13,6 @@ namespace gui
 		m_pFolder(new QPushButton(this)),
 		m_FileSeq(0)
 	{}
-
-	void FileNameGroup::load_qss()
-	{
-		QFile QssFile("qss/share_tree.qss");
-		QssFile.open(QFile::ReadOnly);
-		m_qssStyle = QssFile.readAll();
-	}
 
 	void FileNameGroup::init(int32_t FileSeq, QString FileName)
 	{
@@ -37,10 +29,14 @@ namespace gui
 		hide_button();
 		m_pCheckBox->setText(FileName);
 		//设置按钮样式
-		m_pCheckBox->setStyleSheet(m_qssStyle);
-		m_pLink->setStyleSheet(m_qssStyle);
-		m_pDelete->setStyleSheet(m_qssStyle);
-		m_pFolder->setStyleSheet(m_qssStyle);
+		QFile QssFile("qss/share_tree.qss");
+		QssFile.open(QFile::ReadOnly);
+		QString qssStyle = QssFile.readAll();
+
+		m_pCheckBox->setStyleSheet(qssStyle);
+		m_pLink->setStyleSheet(qssStyle);
+		m_pDelete->setStyleSheet(qssStyle);
+		m_pFolder->setStyleSheet(qssStyle);
 		m_pLink->setProperty("Button", "link");
 		m_pDelete->setProperty("Button", "close");
 		m_pFolder->setProperty("Button", "folder");
@@ -66,7 +62,6 @@ namespace gui
 
 	void FileNameGroup::set_style(const QString& Style, const QString& Language)
 	{
-		m_pCheckBox->setStyleSheet(m_qssStyle);
 		m_pCheckBox->setProperty("CheckBox", Style);
 		style()->unpolish(m_pCheckBox);
 		style()->polish(m_pCheckBox);
@@ -110,7 +105,7 @@ namespace gui
 		QTreeWidgetItem* pCurItem = itemAt(pEvent->x(), pEvent->y());
 		if (nullptr == pCurItem)//当前在空item
 		{
-			if (nullptr != m_pCurItem)//之前不为空
+			if (nullptr != pCurItem)//之前不为空
 			{
 				emit(itemLeft(m_pCurItem));
 				m_pCurItem = nullptr;
@@ -123,7 +118,7 @@ namespace gui
 				m_pCurItem = pCurItem;
 				emit(itemEntered(m_pCurItem));
 			}
-			else if (pCurItem != m_pCurItem)//离开前一个
+			else if (m_pCurItem != pCurItem)//离开前一个
 			{
 				emit(itemLeft(m_pCurItem));
 				m_pCurItem = pCurItem;

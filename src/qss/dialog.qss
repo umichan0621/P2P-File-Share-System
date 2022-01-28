@@ -1,3 +1,8 @@
+QWidget
+{
+	background-color:transparent;
+}
+
 /*整体背景色*/
 QWidget[Background='light']
 {
@@ -30,93 +35,6 @@ QWidget[Bottom='dark']
 	background-color:#4a4a4a;
 }
 /*底部颜色*/
-
-/*分割线*/
-QFrame[Line='light']
-{
-	border-top:2px solid #e4e7ed;
-}
-
-QFrame[Line='dark']
-{
-	border-top:2px solid #4a4a4a;
-}
-/*分割线*/
-
-/*取消*/
-QPushButton[Cancel='light'],[Cancel='dark']
-{
-	font-family:"Microsoft YaHei";
-	font-size:13px;
-	border-radius:4px;
-}
-
-QPushButton[Cancel='light']
-{
-	border:1px solid #cfcfcf;
-    background-color:#ffffff;
-    color:#606266;
-}
-
-QPushButton[Cancel='light']:hover
-{
-	border:1px solid #5b5bfa;
-    background-color:#efefff;
-    color:#5b5bfa;
-}
-
-QPushButton[Cancel='dark']
-{
-	border:none;
-    background-color:#5b5b5b;
-    color:#ffffff;
-}
-
-QPushButton[Cancel='dark']:hover
-{
-	border:1px solid #5b5bfa;
-    background-color:#333333;
-    color:#5b5bfa;
-}
-/*取消*/
-
-/*提交*/
-QPushButton[Submit='light'],[Submit='dark']
-{
-	font-family:"Microsoft YaHei";
-	font-size:13px;
-	font-weight:bold;
-	border-radius:4px;
-}
-
-QPushButton[Submit='light']
-{
-	border:none;
-    background-color:#5b5bfa;
-    color:#ffffff;
-}
-
-QPushButton[Submit='light']:hover
-{
-	border:1px solid #5b5bfa;
-    background-color:#efefff;
-    color:#5b5bfa;
-}
-
-QPushButton[Submit='dark']
-{
-	border:none;
-    background-color:#5b5bfa;
-    color:#ffffff;
-}
-
-QPushButton[Submit='dark']:hover
-{
-	border:1px solid #5b5bfa;
-    background-color:#333333;
-    color:#5b5bfa;
-}
-/*提交*/
 
 /*多行输入框*/
 QTextEdit[TextEdit='light'],[TextEdit='dark']
@@ -268,40 +186,3 @@ QLabel[LabelText='dark']
     color:#dbdbdb;
 }
 /*操作提示标签*/
-
-/*选择按钮*/
-QPushButton[ButtonStyle='light'],[ButtonStyle='dark']
-{
-	font-family:"Microsoft YaHei";
-	font-size:15px;
-	border:none;
-	background-color:transparent;
-}
-
-QPushButton[ButtonStyle='light'],[ButtonStyle='dark']:hover
-{
-    color:#5b5bfa;
-}
-
-QPushButton[ButtonStatus='choose']
-{
-	border-bottom:2px solid #5b5bfa;
-    color:#5b5bfa;
-}
-
-QPushButton[ButtonStatus='choose']:hover
-{
-	border-bottom:2px solid #5b5bfa;
-    color:#5b5bfa;
-}
-
-QPushButton[ButtonStyle='light']
-{
-    color:#606266;
-}
-
-QPushButton[ButtonStyle='dark']
-{
-    color:#a2a3a4;
-}
-/*选择按钮*/

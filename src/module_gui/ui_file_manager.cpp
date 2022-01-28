@@ -4,7 +4,9 @@
 #include <QHBoxLayout>
 #include <base/logger/logger.h>
 #include <module_db/database.h>
+#include <QVariant>
 #include "ui_list_component.h"
+#define SET_PROPERTY(QOBJ,PROPERTY,STYLE) QOBJ->setProperty(PROPERTY, STYLE);style()->unpolish(QOBJ);style()->polish(QOBJ)
 
 namespace gui
 {
@@ -20,15 +22,37 @@ namespace gui
 		m_pDelete(new QAction(this)),
 		m_pUpload(new QAction(this)),
 		m_pMove(new QAction(this)),
+		m_pDeleteMessageBox(new QMessageBox(this)),
 		m_pCurItem(nullptr)
 	{
+		QFile QssFile("qss/button_style.qss");
+		QssFile.open(QFile::ReadOnly);
+		QString qssButton = QssFile.readAll();
 		setViewMode(QListView::ViewMode::IconMode);
 		setDragDropMode(QAbstractItemView::InternalMove);
 		setResizeMode(QListView::Adjust);
 		setMouseTracking(true);
 		resize(1200, 700);
+		m_pDeleteMessageBox->setStandardButtons( QMessageBox::Yes| QMessageBox::No );
+		m_pDeleteMessageBox->setDefaultButton(QMessageBox::No);
+		m_pDeleteMessageBox->button(QMessageBox::Yes)->setFixedSize(60, 25);
+		m_pDeleteMessageBox->button(QMessageBox::No)->setFixedSize(60, 25);
+		m_pDeleteMessageBox->button(QMessageBox::Yes)->setStyleSheet(qssButton);
+		m_pDeleteMessageBox->button(QMessageBox::No)->setStyleSheet(qssButton);
+		m_pDeleteMessageBox->setFixedSize(300, 200);
+		//m_pDeleteMessageBox->setStyleSheet("background:red;");
 		init_menu();
 		init_slots();
+	}
+
+	void FileListWidget::set_style(const QString& Style, const QString& Language)
+	{
+		m_pDeleteMessageBox->setWindowTitle(QString::fromLocal8Bit(""));
+		m_pDeleteMessageBox->button(QMessageBox::Yes)->setText(QString::fromLocal8Bit("确认"));
+		m_pDeleteMessageBox->button(QMessageBox::No)->setText(QString::fromLocal8Bit("取消"));
+
+		SET_PROPERTY(m_pDeleteMessageBox->button(QMessageBox::Yes), "Confirm", Style);
+		SET_PROPERTY(m_pDeleteMessageBox->button(QMessageBox::No), "Cancel", Style);
 	}
 
 	void FileListWidget::init_menu()
@@ -70,7 +94,15 @@ namespace gui
 				IconComponent* pCurWidget = (IconComponent*)itemWidget(m_pCurItem);
 				if (nullptr != pCurWidget)
 				{
-					emit(delete_file(pCurWidget->file_seq(), row(m_pCurItem)));
+					QString Message = QString::fromLocal8Bit("确定要删除\"");
+					Message += pCurWidget->file_name();
+					Message += QString::fromLocal8Bit("\"吗?");
+					m_pDeleteMessageBox->setText(Message);
+					if (QMessageBox::Yes == m_pDeleteMessageBox->exec())
+					{
+						emit(delete_file(pCurWidget->file_seq(), row(m_pCurItem)));
+					}
+					m_pCurItem = nullptr;
 				}
 			});
 		
@@ -81,6 +113,7 @@ namespace gui
 				if (nullptr != pCurWidget)
 				{
 					emit(open_folder(pCurWidget->file_seq()));
+					m_pCurItem = nullptr;
 				}
 			});
 
@@ -100,6 +133,7 @@ namespace gui
 				if (nullptr != pCurWidget)
 				{
 					emit(move_file(pCurWidget->file_seq()));
+					m_pCurItem = nullptr;
 				}
 			});
 		connect(m_pShare, &QAction::triggered, this, [&]()
@@ -109,24 +143,21 @@ namespace gui
 				//LOG_ERROR << pCurWidget->file_seq();
 			});
 		connect(this, &QListWidget::itemClicked, this, [&]
-		(QListWidgetItem* pCurItem)
+		(QListWidgetItem* m_pCurItem)
 			{
 				//之前有重命名的文件/文件夹，完成重命名
-				if (nullptr != m_pCurItem)
+				for (int32_t i = 0; i < count(); ++i)
 				{
-					IconComponent* pCurWidget = (IconComponent*)itemWidget(m_pCurItem);
-					if (nullptr != m_pCurItem)
-					{
-						pCurWidget->rename_over();
-					}
+					IconComponent* pCurWidget = (IconComponent*)itemWidget(item(i));
+					pCurWidget->rename_over();
 				}
 			});
 
 		//连接双击item事件
 		connect(this, &QListWidget::itemDoubleClicked, this, [&]
-		(QListWidgetItem* pCurItem)
+		(QListWidgetItem* m_pCurItem)
 			{
-				IconComponent* pCurWidget = (IconComponent*)itemWidget(pCurItem);
+				IconComponent* pCurWidget = (IconComponent*)itemWidget(m_pCurItem);
 				if (nullptr != pCurWidget)
 				{
 					emit(open_folder(pCurWidget->file_seq()));
@@ -137,13 +168,10 @@ namespace gui
 	void FileListWidget::contextMenuEvent(QContextMenuEvent* pEvent)
 	{
 		//之前有重命名的文件/文件夹，完成重命名
-		if (nullptr != m_pCurItem)
+		for (int32_t i = 0; i < count(); ++i)
 		{
-			IconComponent* pCurWidget = (IconComponent*)itemWidget(m_pCurItem);
-			if (nullptr != m_pCurItem)
-			{
-				pCurWidget->rename_over();
-			}
+			IconComponent* pCurWidget = (IconComponent*)itemWidget(item(i));
+			pCurWidget->rename_over();
 		}
 		m_pCurItem = itemAt(mapFromGlobal(QCursor::pos()));
 		//当前右键点击Item
@@ -156,7 +184,6 @@ namespace gui
 		{
 			m_pBlankMenu->exec(QCursor::pos());
 		}
-		m_pCurItem = nullptr;
 	}
 
 

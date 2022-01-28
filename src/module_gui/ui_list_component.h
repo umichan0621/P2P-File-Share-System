@@ -25,6 +25,7 @@ namespace gui
 	public:
 		void init(int32_t FileSeq,QString FileName,int8_t FileType);
 		int32_t file_seq();
+		QString file_name();
 		void set_style(const QString& qssStyle, const QString& Style);
 		void rename_start();
 		void rename_over();

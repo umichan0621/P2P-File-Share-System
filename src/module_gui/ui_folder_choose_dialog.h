@@ -27,7 +27,7 @@ namespace gui
 		//输入参数：整体的文件夹信息，当前文件/文件夹序号
 		void show_dialog(const Folder& FolderInfo,int32_t FileSeq);
 	private:
-		void show_sub_folder(QTreeWidgetItem* pCurItem, const Folder& FolderInfo);
+		void show_sub_folder(QTreeWidgetItem* m_pCurItem, const Folder& FolderInfo);
 		void init_slots();
 	signals:
 		void file_move_to(int32_t FileSeq,int32_t FolderSeq);

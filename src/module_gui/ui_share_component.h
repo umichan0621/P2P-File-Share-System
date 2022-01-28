@@ -18,7 +18,6 @@ namespace gui
 		Q_OBJECT
 	public:
 		FileNameGroup(QWidget* Parent = Q_NULLPTR);
-		static void load_qss();
 		void set_style(const QString& Style, const QString& Language);
 		void init(int32_t FileSeq,QString FileName);
 		void hide_button();
@@ -35,7 +34,6 @@ namespace gui
 		QPushButton*	m_pDelete;
 		QPushButton*	m_pFolder;
 		int32_t			m_FileSeq;
-		static QString	m_qssStyle;
 	};
 
 	//重写enter和leave信号的QTreeWidget

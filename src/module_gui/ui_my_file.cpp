@@ -7,6 +7,7 @@
 #include <module_db/database.h>
 #include "ui_list_component.h"
 #pragma warning(disable:26812)
+#define SET_PROPERTY(QOBJ,PROPERTY,STYLE) QOBJ->setProperty(PROPERTY, STYLE);style()->unpolish(QOBJ);style()->polish(QOBJ)
 
 namespace gui
 {
@@ -29,7 +30,7 @@ namespace gui
 	
 	MyFile::MyFile(QWidget* Parent) :
 		QWidget(Parent),
-		m_pLineUp(new QFrame(this)),
+		m_pLineHigh(new QFrame(this)),
 		m_pLineLow(new QFrame(this)),
 		m_pFileManager(new FileListWidget(this)),
 		m_pChoosePath(new QWidget(this)),
@@ -38,24 +39,33 @@ namespace gui
 		m_pBack(new QPushButton(this)),
 		m_pNext(new QPushButton(this))
 	{
-		load_qss();
 		setMouseTracking(true);
 
 		FileInfo Info = { 0 };
 		Info.FileName = QString::fromLocal8Bit("我的文件").toStdString();
 		m_FileMap[0] = Info;
 		//分隔线设置
-		m_pLineUp->setFrameShape(QFrame::HLine);
+		m_pLineHigh->setFrameShape(QFrame::HLine);
 		m_pLineLow->setFrameShape(QFrame::HLine);
 		m_pChoosePathLayout->setMargin(0);
 		m_pBack->setGeometry(13, 25, 25, 25);
 		m_pNext->setGeometry(46, 25, 25, 25);
-
 		m_pChoosePath->setGeometry(70, 25, KPATH_BUTTON_WIDTH * 5, 25);
-		m_pBack->setProperty("Button", "back");
-		m_pNext->setProperty("Button", "next");
+
+		QFile qssFile("qss/my_file.qss");
+		qssFile.open(QFile::ReadOnly);
+		m_qssStyle = qssFile.readAll();
+		QFile qssLine("qss/split_line_style.qss");
+		qssLine.open(QFile::ReadOnly);
+		QString qssLineStyle = qssLine.readAll();
+
+		m_pLineHigh->setStyleSheet(qssLineStyle);
+		m_pLineLow->setStyleSheet(qssLineStyle);
 		m_pBack->setStyleSheet(m_qssStyle);
 		m_pNext->setStyleSheet(m_qssStyle);
+		m_pFileManager->setStyleSheet(m_qssStyle);
+		m_pBack->setProperty("Button", "back");
+		m_pNext->setProperty("Button", "next");
 
 		init_slots();
 		refresh_path();
@@ -223,13 +233,12 @@ namespace gui
 
 	void MyFile::set_style(const QString& Style, const QString& Language)
 	{
-		load_qss();
 		m_strStyle = Style;
-		m_pFileManager->setStyleSheet(m_qssStyle);
-		m_pFileManager->setProperty("MyFile", Style);
+		m_pFileManager->set_style(Style, Language);
+		SET_PROPERTY(m_pFileManager, "MyFile", Style);
+		SET_PROPERTY(m_pLineHigh, "Line", Style);
+		SET_PROPERTY(m_pLineLow, "Line", Style);
 
-		style()->unpolish(m_pFileManager);
-		style()->polish(m_pFileManager);
 		for (auto& pCurButton : m_FolderPath)
 		{
 			pCurButton->setProperty("Path", m_strStyle);
@@ -238,13 +247,6 @@ namespace gui
 			style()->polish(pCurButton);
 		}
 		refresh();
-	}
-
-	void MyFile::load_qss()
-	{
-		QFile QssFile("qss/my_file.qss");
-		QssFile.open(QFile::ReadOnly);
-		m_qssStyle = QssFile.readAll();
 	}
 
 	Folder MyFile::folder_info()
@@ -431,7 +433,7 @@ namespace gui
 
 	void MyFile::resizeEvent(QResizeEvent* pEvent)
 	{
-		m_pLineUp->setGeometry(13, 24, width() - 35, 2);
+		m_pLineHigh->setGeometry(13, 24, width() - 35, 2);
 		m_pLineLow->setGeometry(13, 50, width() - 35, 2);
 		m_pFileManager->setGeometry(3, 52, width() - 6, height() - 52);
 	}

@@ -21,16 +21,20 @@ namespace gui
 		m_pCancel(new QPushButton(m_pDialog)),
 		m_pConfirm(new QPushButton(m_pDialog))
 	{
-		QFile QssTotal("qss/folder_choose_dialog.qss");
-		QssTotal.open(QFile::ReadOnly);
-		m_qssStyle = QssTotal.readAll();
+		QFile qssTotal("qss/folder_choose_dialog.qss");
+		qssTotal.open(QFile::ReadOnly);
+		m_qssStyle = qssTotal.readAll();
+		QFile qssButton("qss/button_style.qss");
+		qssButton.open(QFile::ReadOnly);
+		QString qssButtonStyle = qssButton.readAll();
 
 		m_pBottom->setStyleSheet(m_qssStyle);
 		m_pDialog->setStyleSheet(m_qssStyle);
-		m_pCancel->setStyleSheet(m_qssStyle);
-		m_pConfirm->setStyleSheet(m_qssStyle);
-		m_pCreateFolder->setStyleSheet(m_qssStyle);
 		m_pFolderTree->setStyleSheet(m_qssStyle);
+
+		m_pCancel->setStyleSheet(qssButtonStyle);
+		m_pConfirm->setStyleSheet(qssButtonStyle);
+		m_pCreateFolder->setStyleSheet(qssButtonStyle);
 		//设置固定布局
 		int32_t Width = 400;
 		int32_t Height = 300;
@@ -48,20 +52,6 @@ namespace gui
 
 	void FolderChooseDialog::set_style(const QString& Style, const QString& Language)
 	{
-
-		//{
-		//	QFile QssTotal("qss/folder_choose_dialog.qss");
-		//	QssTotal.open(QFile::ReadOnly);
-		//	QString qssStyle = QssTotal.readAll();
-
-		//	m_pBottom->setStyleSheet(qssStyle);
-		//	m_pDialog->setStyleSheet(qssStyle);
-		//	m_pCancel->setStyleSheet(qssStyle);
-		//	m_pConfirm->setStyleSheet(qssStyle);
-		//	m_pCreateFolder->setStyleSheet(qssStyle);
-		//	m_pFolderTree->setStyleSheet(qssStyle);
-		//}
-
 		m_pCreateFolder->setText(QString::fromLocal8Bit("新建文件夹"));
 		m_pCancel->setText(QString::fromLocal8Bit("取消"));
 		m_pConfirm->setText(QString::fromLocal8Bit("确认"));
@@ -83,10 +73,10 @@ namespace gui
 		{
 
 		}
-		QTreeWidgetItem* pCurItem = new QTreeWidgetItem();
-		m_pFolderTree->addTopLevelItem(pCurItem);
-		show_sub_folder(pCurItem, FolderInfo);
-		pCurItem->setExpanded(true);
+		QTreeWidgetItem* m_pCurItem = new QTreeWidgetItem();
+		m_pFolderTree->addTopLevelItem(m_pCurItem);
+		show_sub_folder(m_pCurItem, FolderInfo);
+		m_pCurItem->setExpanded(true);
 		show();
 	}
 
@@ -107,17 +97,17 @@ namespace gui
 			});
 	}
 
-	void FolderChooseDialog::show_sub_folder(QTreeWidgetItem* pCurItem, const Folder& FolderInfo)
+	void FolderChooseDialog::show_sub_folder(QTreeWidgetItem* m_pCurItem, const Folder& FolderInfo)
 	{
-		pCurItem->setIcon(0, QIcon("image/folder_my_file.svg"));
-		pCurItem->setText(0, FolderInfo.FileName);
-		pCurItem->setText(1, QString::number(FolderInfo.FileSeq));
+		m_pCurItem->setIcon(0, QIcon("image/folder_my_file.svg"));
+		m_pCurItem->setText(0, FolderInfo.FileName);
+		m_pCurItem->setText(1, QString::number(FolderInfo.FileSeq));
 		for (Folder CurSubFolder : FolderInfo.SubFolder)
 		{
 			if (m_FileSeq != CurSubFolder.FileSeq)
 			{
 				QTreeWidgetItem* pSubItem = new QTreeWidgetItem();
-				pCurItem->addChild(pSubItem);
+				m_pCurItem->addChild(pSubItem);
 				show_sub_folder(pSubItem, CurSubFolder);
 			}
 
