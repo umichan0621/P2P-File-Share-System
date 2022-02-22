@@ -77,9 +77,15 @@ namespace gui
 
 		//重载大小调整事件
 		void resizeEvent(QResizeEvent* pEvent);
+
 	signals:
-		void add_file(int32_t FileSeq);
-		void delete_file(int32_t FileSeq);
+		void show_my_file(int32_t FileSeq);
+
+		//接收到外部删除的信号
+		void input_delete_file(int32_t FileSeq);
+
+		//向外部发送删除的信号
+		void output_delete_file(int32_t FileSeq,uint8_t FileType);
 
 		//尝试移动指定文件，弹出对话框
 		void file_move(int32_t FileSeq);

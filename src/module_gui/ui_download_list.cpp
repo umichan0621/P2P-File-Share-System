@@ -130,7 +130,7 @@ namespace gui
 				set_button_style();
 			});
 		//向Gui添加新的下载任务
-		connect(this, &DownloadList::new_download, this,
+		connect(this, &DownloadList::show_download, this,
 			[&](int32_t FileSeq)
 			{
 				uint8_t Status = 0;
@@ -224,8 +224,9 @@ namespace gui
 						m_pListWidget->setItemHidden(m_DownloadWidgetMap[FileSeq], true);
 					}
 				}
-				//通知控制器任务已开始
-				emit(start_file(FileSeq));
+				//写入数据库任务已开始
+				int8_t Status = STATUS_DOWNLOAD;
+				g_pDataBaseManager->update_file_info(FileSeq, Status);
 			});
 		//收到子组件的暂停信号
 		connect(pCurWidget, &DownloadCard::pause_me, this,
@@ -239,27 +240,17 @@ namespace gui
 						m_pListWidget->setItemHidden(m_DownloadWidgetMap[FileSeq], true);
 					}
 				}
-				//通知控制器任务已暂停
-				emit(pause_file(FileSeq));
+				//写入数据库任务已暂停
+				int8_t Status = STATUS_PAUSE;
+				g_pDataBaseManager->update_file_info(FileSeq, Status);
 			});
 		//收到子组件的删除信号
 		connect(pCurWidget, &DownloadCard::delete_me, this,
 			[&](int32_t FileSeq)
 			{
-				std::lock_guard<std::mutex> Lock(m_DownloadListMutex);
-				if (m_DownloadWidgetMap.count(FileSeq) == 0)
-				{
-					return;
-				}
-				QListWidgetItem* pItem = m_DownloadWidgetMap[FileSeq];
-				DownloadCard* pCurWidget = (DownloadCard*)m_pListWidget->itemWidget(pItem);
-				//从ListWidget中删除
-				m_pListWidget->takeItem(m_pListWidget->row(pItem));
-				delete pCurWidget;
-				delete pItem;
-				m_DownloadWidgetMap.erase(FileSeq);
+				clear_file(FileSeq);
 				//通知控制器任务已删除
-				emit(delete_file(FileSeq));
+				emit(output_delete_file(FileSeq));
 			});
 		//收到子组件的打开文件位置信号
 		connect(pCurWidget, &DownloadCard::folder_me, this,
@@ -299,6 +290,22 @@ namespace gui
 			pCurWidget->set_style(m_strStyle, m_strLanguage);
 		}
 		set_button_style();
+	}
+	
+	void DownloadList::clear_file(int32_t FileSeq)
+	{
+		std::lock_guard<std::mutex> Lock(m_DownloadListMutex);
+		if (m_DownloadWidgetMap.count(FileSeq) == 0)
+		{
+			return;
+		}
+		QListWidgetItem* pItem = m_DownloadWidgetMap[FileSeq];
+		DownloadCard* pCurWidget = (DownloadCard*)m_pListWidget->itemWidget(pItem);
+		//从ListWidget中删除
+		m_pListWidget->takeItem(m_pListWidget->row(pItem));
+		delete pCurWidget;
+		delete pItem;
+		m_DownloadWidgetMap.erase(FileSeq);
 	}
 
 	void DownloadList::set_button_style()

@@ -71,8 +71,6 @@ namespace gui
 		refresh_path();
 	}
 
-
-
 	void MyFile::init_slots()
 	{
 		//新建一个文件夹
@@ -101,13 +99,10 @@ namespace gui
 				}
 			});
 
-		//删除一个文件/文件夹
+		//向外部发出删除一个文件/文件夹的信号
 		connect(m_pFileManager, &FileListWidget::delete_file, this, [&]
 		(int32_t FileSeq,int32_t ItemSeq)
 			{
-				{//询问是否删除
-
-				}
 				std::lock_guard<std::mutex> Lock(m_MyFileMutex);
 				if (0 != m_FileMap.count(FileSeq))
 				{
@@ -186,7 +181,7 @@ namespace gui
 
 
 		//向MyFile添加一条文件记录
-		connect(this, &MyFile::add_file, this, [&]
+		connect(this, &MyFile::show_my_file, this, [&]
 		(int32_t FileSeq)
 			{
 				std::lock_guard<std::mutex> Lock(m_MyFileMutex);
@@ -394,10 +389,11 @@ namespace gui
 		{
 			delete_folder(SubFileSeq);
 		}
+		uint8_t Type = m_FileMap[FileSeq].Type;
 		m_FileMap.erase(FileSeq);
 		m_FolderMap.erase(FileSeq);
 		//向外部发送删除的信号
-		emit(delete_file(FileSeq));
+		emit(output_delete_file(FileSeq, Type));
 	}
 
 	void MyFile::show_file(int32_t FileSeq)

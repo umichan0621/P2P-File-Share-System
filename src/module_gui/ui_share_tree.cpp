@@ -93,7 +93,7 @@ namespace gui
 				}
 			});
 		//向Gui添加新的分享文件
-		connect(this, &ShareTree::new_share, this, 
+		connect(this, &ShareTree::show_share, this,
 			[&](int32_t FileSeq)
 			{
 				std::string FileName, Remark, CreateTime;
@@ -193,20 +193,25 @@ namespace gui
 		//删除文件信号
 		connect(pGroup, &FileNameGroup::delete_me, this, [&](int32_t FileSeq) 
 			{
-				std::unique_lock<std::mutex> Lock(m_Mutex);
-				if (0 != m_pItemMap.count(FileSeq))
-				{
-					QTreeWidgetItem* m_pCurItem = m_pItemMap[FileSeq];
-					m_pItemMap.erase(FileSeq);
-
-					if (nullptr != m_pCurItem)
-					{
-						delete m_pCurItem;
-					}
-					m_pTree->reset();
-				}
+				clear_file(FileSeq);
 				emit(delete_file(FileSeq));
 			});
+	}
+
+	void ShareTree::clear_file(int32_t FileSeq)
+	{
+		std::unique_lock<std::mutex> Lock(m_Mutex);
+		if (0 != m_pItemMap.count(FileSeq))
+		{
+			QTreeWidgetItem* m_pCurItem = m_pItemMap[FileSeq];
+			m_pItemMap.erase(FileSeq);
+
+			if (nullptr != m_pCurItem)
+			{
+				delete m_pCurItem;
+			}
+			m_pTree->reset();
+		}
 	}
 
 	void ShareTree::set_style(const QString& Style, const QString& Language)

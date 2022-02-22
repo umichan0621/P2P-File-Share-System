@@ -20,6 +20,7 @@ namespace gui
 		ShareTree(QWidget* Parent = Q_NULLPTR);
 	public:
 		void set_style(const QString& Style, const QString& Language);
+		void clear_file(int32_t FileSeq);
 	private:
 		void init_slots();
 		void init_sub_slots(FileNameGroup* pGroup);
@@ -27,7 +28,7 @@ namespace gui
 		void delete_file(int32_t FileSeq);
 		void create_link(int32_t FileSeq);
 		void open_folder(int32_t FileSeq);
-		void new_share(int32_t FileSeq);
+		void show_share(int32_t FileSeq);
 	private:
 		TreeWidget*			m_pTree;
 		FileNameGroup*		m_pCurGroup;
