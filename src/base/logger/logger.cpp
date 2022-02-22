@@ -144,9 +144,12 @@ Logger::Impl::Impl(LogLevel level, int savedErrno, const SourceFile& file, int l
 			m_stream << LogLevelName[level] << ' ';
 		break;
 	}
-
+	const char* pFilePath = m_fileBaseName.m_data;
+#ifndef __linux__
+	pFilePath = strrchr(pFilePath, '\\') ? strrchr(pFilePath, '\\') + 1 : pFilePath;
+#endif
 	//m_stream << LogLevelName[level] << ' ';
-	m_stream << '[' << m_fileBaseName.m_data << ':' << m_line << "] ";
+	m_stream << '[' << pFilePath << ':' << m_line << "] ";
 	if (savedErrno != 0)
 	{
 		m_stream << strerror_tl(savedErrno) << " (errno=" << savedErrno << ") ";
@@ -181,4 +184,3 @@ void Logger::Impl::formatTime()
 	assert(us.length() == 8);
 	m_stream << t_time << us.data();
 }
-

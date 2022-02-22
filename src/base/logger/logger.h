@@ -1,6 +1,7 @@
 #pragma once
 #include "log_stream.h"
 #include "time_stamp.h"
+#define filename(x) strrchr(x,'\\')?strrchr(x,'\\')+1:x
 //#pragma warning(disable : 26812)
 // CAUTION: do not write:
 //
@@ -19,7 +20,7 @@
 //
 
 #define LOG_TRACE if (Logger::logLevel() <= Logger::TRACE) \
-	Logger(__FILE__, __LINE__, Logger::TRACE, __func__).stream()
+	Logger(__FILE__, __LINE__, Logger::TRACE).stream()
 #define LOG_DEBUG if (Logger::logLevel() <= Logger::DEBUG) \
 	Logger(__FILE__, __LINE__, Logger::DEBUG, __func__).stream()
 #define LOG_INFO if (Logger::logLevel() <= Logger::INFO) \
