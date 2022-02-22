@@ -41,6 +41,8 @@ bool TrackerCtrl::init()
 	{
 		return false;
 	}
+	//初始化Buffer池
+	g_pBufferPoolMgr->init(32, MIN_MTU);
 	//注册基本事件
 	handler::HandlerBase* pHandlerBase = new handler::HandlerBase();
 	m_pMoudleHandler->register_event(PROTOCOL_TYPE_BASE, pHandlerBase);
@@ -65,4 +67,16 @@ void TrackerCtrl::init_config()
 {
 	g_pConfig->set_max_connection_num(1024);
 	g_pConfig->set_port(TEST_PORT, TEST_PORT6);
+}
+
+void TrackerCtrl::output(const std::string& strCommand)
+{
+	if (strCommand == "/count")
+	{
+		LOG_TRACE << "Current connection num:"<<g_pPeerManager->connection_num();
+	}
+	else
+	{
+
+	}
 }

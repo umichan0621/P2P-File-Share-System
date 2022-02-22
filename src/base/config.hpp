@@ -11,8 +11,8 @@
 using std::string;
 //测试用
 #ifndef _DEBUG
-constexpr int TEST_PORT = 2342;
-constexpr int TEST_PORT6 = 34245;
+constexpr int TEST_PORT = 2345;
+constexpr int TEST_PORT6 = 6789;
 #else
 //constexpr int TEST_PORT = 32542;//NAT C
 constexpr int TEST_PORT = 42543;//NAT B+
@@ -50,7 +50,7 @@ constexpr uint32_t	PING_CLOCK = 500;				//ping的频率
 constexpr uint32_t	PING_TIMEOUT_COUNT = 10;		//ping的次数
 
 constexpr uint64_t	PROGRESS_REFRESH_FREQUENCY = 1000;
-constexpr uint32_t	DOWNLOAD_RATE = 10;//10MB/s
+constexpr uint32_t	DOWNLOAD_RATE = 10;//30MB/s
 constexpr uint32_t	PING_RTT = 200;					//连接时ping和connect时发送的频率
 constexpr uint16_t	HEARTBEAT_TIMEOUT_COUNT = 3;
 constexpr uint16_t	CONNECT_TIMEOUT_COUNT = 6;

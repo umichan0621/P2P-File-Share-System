@@ -7,7 +7,8 @@ int main()
 	App.init();
 	while (1)
 	{
-		int x;
-		std::cin >> x;
+		std::string strCommand;
+		std::cin >> strCommand;
+		App.output(strCommand);
 	}
 }

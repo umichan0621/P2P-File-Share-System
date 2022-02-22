@@ -56,8 +56,8 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 		base::sha1_value(SHA1Struct, strSHA1);
 		uint64_t FragmentStart;
 		memcpy(&FragmentStart, &pMessage[22], 8);
-		LOG_ERROR << strSHA1;
-		LOG_ERROR << FragmentStart;
+		//LOG_ERROR << strSHA1;
+		//LOG_ERROR << FragmentStart;
 		file::FileCtrl FileCtrl;
 		//没有保存当前SHA1的文件
 		bool bRes=g_pFileManager->file_ctrl(SHA1Struct, FileCtrl);
@@ -72,7 +72,7 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 		{
 			return DO_NOTHING;
 		}
-		LOG_ERROR << "READ " << FragmentLen;
+		//LOG_ERROR << "READ " << FragmentLen;
 		create_header(pMessage, PROTOCOL_FILE_FRAGMENT_ACK);
 
 		std::vector<const char*> VecMessage = { pMessage ,pBuf };
@@ -86,7 +86,7 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 	
 	int8_t HandlerFile::handle_file_fragment_ack(uint16_t& SessionId, char* pMessage, uint16_t& Len)
 	{
-		LOG_ERROR << "ACK Len = "<< Len;
+		//LOG_ERROR << "ACK Len = "<< Len;
 		//获取当前Fragment数据的信息
 		base::SHA1 SHA1Struct;
 		memcpy(&SHA1Struct, &pMessage[2], 20);
@@ -102,7 +102,7 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 		}
 		const char* pFragment = pMessage + 30;
 		uint16_t FragmentLen = Len - 30;
-		LOG_ERROR << Len - 30;
+		//LOG_ERROR << Len - 30;
 		FileCtrl->complete_fragment(pFragment, FragmentStart, Len - 30);
 		return DO_NOTHING;
 	}

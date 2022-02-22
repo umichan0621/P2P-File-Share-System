@@ -19,9 +19,9 @@ public:
 public:
 	bool init();
 	void init_config();
+	void output(const std::string& strCommand);
 private://各个模块
 	MoudleNet*			m_pMoudleNet;
-	//MoudlePeer*			m_pMoudlePeer;
 	MoudleHandler*		m_pMoudleHandler;
 	base::ThreadPool*	m_pThreadPool;
 };

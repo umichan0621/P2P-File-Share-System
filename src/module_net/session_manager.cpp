@@ -115,7 +115,7 @@ static bool try_ping_probe_tracker(uint16_t SessionId)
 
 static bool recycle_session(uint16_t SessionId)
 {
-	LOG_TRACE << "Session ID:" << SessionId << " recycle.";
+	LOG_DEBUG << "Session ID:" << SessionId << " recycle.";
 	g_pPeerManager->recycle_session(SessionId);
 	return true;
 }
@@ -151,6 +151,10 @@ static bool try_connect_peer_once(base::SHA1 CID, uint16_t SessionId)
 	if (++TriggerTimes >= CONNECT_TIMEOUT_COUNT)
 	{
 		g_pSessionManager->disconnect_in_timer(SessionId);
+		{//Test
+			LOG_DEBUG << "Fail to connect session:" << SessionId << ", reason:offline.";
+
+		}//Test
 		return true;
 	}
 	char pMessage[2];
@@ -274,6 +278,8 @@ static bool first_try_connect_peer(base::SHA1 CID, uint16_t TargetSessionId, uin
 			peer::Node CurNode(CID.Hash, PeerId);
 			g_pRoutingTable->add_node(CurNode);
 		}
+		//加入查询队列
+		g_pPeerManager->register_push(TargetSessionId);
 		return true;
 	}
 

@@ -326,18 +326,20 @@ namespace net
 				if (ERROR_SESSION_ID != SessionId)
 				{
 					char* pMessage = pIoData->WsaBuf.buf;
-					pIoData->WsaBuf.buf = g_pBufferPoolMgr->allocate();
+					//pIoData->WsaBuf.buf = g_pBufferPoolMgr->allocate();
 					//新的连接
 					if (0 == SessionId)
 					{
-						m_pThreadPool->add_task(std::bind(&NetReceiverWin::_gateway, 
-							this, pIoData->PeerAddr, pMessage, static_cast<uint16_t>(Len)));
+						//m_pThreadPool->add_task(std::bind(&NetReceiverWin::_gateway, 
+						//	this, pIoData->PeerAddr, pMessage, static_cast<uint16_t>(Len)));
+						_gateway(pIoData->PeerAddr, pMessage, static_cast<uint16_t>(Len));
 					}
 					//触发recv回调
 					else
 					{
-						m_pThreadPool->add_task(std::bind(&NetReceiverWin::_recv,
-							this,SessionId, pMessage, static_cast<uint16_t>(Len)));
+						//m_pThreadPool->add_task(std::bind(&NetReceiverWin::_recv,
+						//	this,SessionId, pMessage, static_cast<uint16_t>(Len)));
+						_recv(SessionId, pMessage, static_cast<uint16_t>(Len));
 					}
 				}
 				//用post_recv重新投递出去

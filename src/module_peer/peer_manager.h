@@ -154,6 +154,9 @@ namespace peer
 		//加入一个没有连接的Peer
 		void search_push(int32_t PeerId);
 
+		//返回连接数
+		uint16_t connection_num();
+
 		static bool info(const PeerAddress& PeerAddr, std::string& strIP, uint16_t& Port);
 	private:
 

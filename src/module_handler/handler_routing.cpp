@@ -1,7 +1,8 @@
 ﻿#include "handler_routing.h"
 #include <base/config.hpp>
-#include <base/hash_function/file_sha1.h>
+#include <base/buffer_pool.hpp>
 #include <base/logger/logger.h>
+#include <base/hash_function/file_sha1.h>
 #include <module_net/session_manager.h>
 #include <module_peer/routing_table.h>
 
@@ -18,10 +19,11 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 	void HandlerRouting::register_recv_event()
 	{
 		//注册Recv事件的处理方式
-		m_RecvHandlerMap[PROTOCOL_ROUTING_SEARCH_REQ]		= ROUTING_REGISTER(handle_routing_search_req);
-		m_RecvHandlerMap[PROTOCOL_ROUTING_SEARCH_ACK]		= ROUTING_REGISTER(handle_routing_search_ack);
-		m_RecvHandlerMap[PROTOCOL_ROUTING_PARTNER]			= ROUTING_REGISTER(handle_routing_partner);
-		m_RecvHandlerMap[PROTOCOL_ROUTING_REGISTER]			= ROUTING_REGISTER(handle_routing_register);
+		m_RecvHandlerMap[PROTOCOL_ROUTING_SEARCH_REQ] = ROUTING_REGISTER(handle_routing_search_req);
+		m_RecvHandlerMap[PROTOCOL_ROUTING_SEARCH_ACK] = ROUTING_REGISTER(handle_routing_search_ack);
+		m_RecvHandlerMap[PROTOCOL_ROUTING_PARTNER] = ROUTING_REGISTER(handle_routing_partner);
+		m_RecvHandlerMap[PROTOCOL_ROUTING_REGISTER_REQ] = ROUTING_REGISTER(handle_routing_register_req);
+		m_RecvHandlerMap[PROTOCOL_ROUTING_REGISTER_ACK] = ROUTING_REGISTER(handle_routing_register_ack);
 
 	}
 
@@ -58,10 +60,8 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 		{
 			return DO_NOTHING;
 		}
-		//当前数据包长度不会超过100，后面的缓存用来作为发送缓存
-		//按最小MTU来算也至少有300的缓存长度可以使用
-		char* pSendBuf = &pMessage[100];
-
+		//分配发送用的缓存区
+		char* pSendBuf = g_pBufferPoolMgr->allocate();
 		//循环解析Key，每个Key都有一个数据包
 		//对每个Key执行两步操作
 		//如果当前模式不是Tracker先查询PartnerTable
@@ -105,7 +105,7 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 						}
 						net::Session* pPartnerSession = g_pSessionManager->session(PartnerId);
 						//当前Partner断连或者是请求者自己
-						if (nullptr == pPartnerSession|| PartnerId== ReqSessionId)
+						if (nullptr == pPartnerSession || PartnerId == ReqSessionId)
 						{
 							continue;
 						}
@@ -128,8 +128,7 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 					}
 					//加入自己的PartnerTable
 					g_pPartnerTable->add_partner(CID, ReqSessionId);
-					//TEST
-					{
+					{//TEST
 						std::string strIP, strCID;
 						uint16_t Port;
 						base::sha1_value(pKey, strCID);
@@ -138,10 +137,9 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 						bool res = peer::PeerManager::info(ReqAddr, strIP, Port);
 						if (false != res)
 						{
-							LOG_TRACE << "Add <" << strCID << ", " << strIP << ":" << Port << "> to Partner Table";
+							LOG_TRACE << "[Partner] <" << strCID << ", " << strIP << ":" << Port << ">";
 						}
-					}
-					//TEST
+					}//TEST
 					continue;
 				}
 #endif
@@ -154,11 +152,10 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 				//读取几个路由表中距离最近的节点
 				std::unordered_set<int32_t> PeerSet;
 				g_pRoutingTable->get_node(pKey, PeerSet);
-				LOG_TRACE << "Search in Routing Table and find result: " << PeerSet.size();
 				//当前节点能够找到距离较近的其他节点，应该返回数据
 				//协议格式:
 				//[固定头部(2B)] +[PID/CID(20B)]+(0-α个)[[sockaddr(28B)]+[Status[1B]]
-				if (false== PeerSet.empty())
+				if (false == PeerSet.empty())
 				{
 					memcpy(&pSendBuf[2], pKey, KLEN_KEY);
 					uint16_t Pos = 2 + KLEN_KEY;
@@ -170,7 +167,7 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 						}
 						uint8_t PeerStatus;
 						PeerAddress SearchAddr = { 0 };
-						bool bRes= g_pPeerManager->peer(SearchPeerID, SearchAddr, PeerStatus);
+						bool bRes = g_pPeerManager->peer(SearchPeerID, SearchAddr, PeerStatus);
 						if (true == bRes)
 						{
 							memcpy(&pSendBuf[Pos], &SearchAddr, KSOCKADDR_LEN_V6);
@@ -183,8 +180,7 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 				}
 				//登记当前节点到路由表中
 				g_pRoutingTable->add_node(CurNode);
-				//TEST
-				{
+				{//TEST
 					std::string strIP, strCID;
 					uint16_t Port;
 					base::sha1_value(pKey, strCID);
@@ -193,38 +189,36 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 					bool res = peer::PeerManager::info(ReqAddr, strIP, Port);
 					if (false != res)
 					{
-						LOG_TRACE << "Add <" << strCID << ", " << strIP << ":" << Port << "> to Routing Table";
+						LOG_TRACE << "[Routing] <" << strCID << ", " << strIP << ":" << Port << ">";
 					}
-				}
+				}//TEST
 			}
 		}
 		//发送Register消息
-		//向当前通信的扩散自己的CID和PID
-		//协议格式:(和search_req内容一致，但是对方收到之后不会回复信息)
-		//[固定头部(2B)] +[PID(20B)]+(0-3个)[CID(20B)]
-		{
-			create_header(pSendBuf, PROTOCOL_ROUTING_REGISTER);
-			memcpy(&pSendBuf[2], g_pRoutingTable->pid(), KLEN_KEY);
-			uint16_t Pos = 2 + KLEN_KEY;
+		//向当前通信的扩散自己的CID
+		//协议格式:(和search_req内容一致，但是对方收到之后除非命中Partner表否则不会回复信息)
+		//[固定头部(2B)] + (0-3个)[CID(20B)]
 #ifndef TRACKER_MODE
-			std::unordered_set<base::SHA1, base::SHA1HashFunc, base::SHA1EqualFunc> CIDSet;
-			base::SHA1 CID = { 0 };
-			for (int8_t i = 0; i < 3; ++i)
+		create_header(pSendBuf, PROTOCOL_ROUTING_REGISTER_ACK);
+		uint16_t Pos = 2;
+		std::unordered_set<base::SHA1, base::SHA1HashFunc, base::SHA1EqualFunc> CIDSet;
+		base::SHA1 CID = { 0 };
+		for (int8_t i = 0; i < 3; ++i)
+		{
+			if (false == g_pPartnerTable->get_cid(CID))
 			{
-				if (false == g_pPartnerTable->get_cid(CID))
-				{
-					break;
-				}
-				CIDSet.insert(CID);
+				break;
 			}
-			for (auto& CurCID : CIDSet)
-			{
-				memcpy(&pSendBuf[Pos], &CurCID, KLEN_KEY);
-				Pos += KLEN_KEY;
-			}
-#endif
-			pReqSession->send_reliable(pSendBuf, Pos);
+			CIDSet.insert(CID);
 		}
+		for (auto& CurCID : CIDSet)
+		{
+			memcpy(&pSendBuf[Pos], &CurCID, KLEN_KEY);
+			Pos += KLEN_KEY;
+		}
+		pReqSession->send_reliable(pSendBuf, Pos);
+#endif
+		g_pBufferPoolMgr->release(pSendBuf);
 		return DO_NOTHING;
 	}
 
@@ -284,14 +278,13 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 							LOG_TRACE << "Try to connect " << strIP << ":" << Port << " by relay SessionID = " << AckSessionId;
 						}
 					}//TEST
-					
+
 				}
 				//其他状态下，中间节点无法协助连接，只尝试一次
 				else
 				{
 					g_pSessionManager->connect_peer(CID, TargetPeerAddr);
-					//TEST
-					{
+					{//TEST
 						std::string strIP;
 						uint16_t Port;
 						bool res = peer::PeerManager::info(TargetPeerAddr, strIP, Port);
@@ -299,15 +292,76 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 						{
 							LOG_TRACE << "Try to connect " << strIP << ":" << Port << " once";
 						}
-					}
-					//TEST
+					}//TEST
 				}
 			}
 		}
 		return DO_NOTHING;
 	}
 
-	int8_t HandlerRouting::handle_routing_register(uint16_t& SessionId, char* pMessage, uint16_t& Len)
+	int8_t HandlerRouting::handle_routing_register_req(uint16_t& SessionId, char* pMessage, uint16_t& Len)
+	{
+		//其他节点发送自己的PID，应该回复本机的PID
+		uint16_t AckSessionId = SessionId;
+		//检测当前Session是否合法
+		net::Session* pAckSession = g_pSessionManager->session(AckSessionId);
+		if (nullptr == pAckSession)
+		{
+			return DO_NOTHING;
+		}
+		char SendBuf[22] = { 0 };
+		create_header(SendBuf, PROTOCOL_ROUTING_REGISTER_ACK);
+		memcpy(&SendBuf[2], g_pRoutingTable->pid(), KLEN_KEY);
+		pAckSession->send_reliable(SendBuf, 22);
+
+		PeerAddress AckPeerAddr = { 0 };
+		pAckSession->get_peer_addr(AckPeerAddr);
+		base::SHA1 PID = { 0 };
+		const uint8_t* pKey = (uint8_t*)&pMessage[2];
+		memcpy(&PID, pKey, KLEN_KEY);
+#ifndef TRACKER_MODE
+		//如果命中PartnerTable
+		if (true == g_pPartnerTable->search_cid(PID))
+		{
+			g_pPartnerTable->add_partner(PID, AckSessionId);
+			//TEST
+			{
+				std::string strIP, strCID;
+				base::sha1_value(pKey, strCID);
+				uint16_t Port;
+				bool res = peer::PeerManager::info(AckPeerAddr, strIP, Port);
+				if (false != res)
+				{
+					LOG_TRACE << "[Partner] <" << strCID << ", " << strIP << ":" << Port << ">";
+				}
+			}
+			//TEST
+			return DO_NOTHING;
+		}
+#endif
+		//加入路由表
+		int32_t PeerId = g_pPeerManager->peer_id(AckPeerAddr);
+		if (PeerId >= 0)
+		{
+			peer::Node CurNode(pKey, PeerId);
+			g_pRoutingTable->add_node(CurNode);
+			//TEST
+			{
+				std::string strIP, strCID;
+				base::sha1_value(pKey, strCID);
+				uint16_t Port;
+				bool res = peer::PeerManager::info(AckPeerAddr, strIP, Port);
+				if (false != res)
+				{
+					LOG_TRACE << "[Routing] <" << strCID << ", " << strIP << ":" << Port << ">";
+				}
+			}
+			//TEST
+		}
+		return DO_NOTHING;
+	}
+
+	int8_t HandlerRouting::handle_routing_register_ack(uint16_t& SessionId, char* pMessage, uint16_t& Len)
 	{
 		//其他节点回复自己的路由表信息
 		//应该把收到的Key注册到自己的RoutingTable或者PartnerTable
@@ -324,7 +378,7 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 		uint16_t Pos = 2;
 		for (; Pos < Len;)
 		{
-			const uint8_t* pKey= (uint8_t*)&pMessage[Pos];
+			const uint8_t* pKey = (uint8_t*)&pMessage[Pos];
 			memcpy(&CID, pKey, KLEN_KEY);
 			Pos += KLEN_KEY;
 #ifndef TRACKER_MODE
@@ -334,13 +388,13 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 				g_pPartnerTable->add_partner(CID, AckSessionId);
 				//TEST
 				{
-					std::string strIP,strCID;
+					std::string strIP, strCID;
 					base::sha1_value(pKey, strCID);
 					uint16_t Port;
 					bool res = peer::PeerManager::info(AckPeerAddr, strIP, Port);
 					if (false != res)
 					{
-						LOG_TRACE << "Add CID = " << strCID<<", Peer:"<< strIP << ":" << Port << " to PartnerTable";
+						LOG_TRACE << "[Partner] <" << strCID << ", " << strIP << ":" << Port << ">";
 					}
 				}
 				//TEST
@@ -361,7 +415,8 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 					bool res = peer::PeerManager::info(AckPeerAddr, strIP, Port);
 					if (false != res)
 					{
-						LOG_TRACE << "Add CID = " << strCID << ", Peer:" << strIP << ":" << Port << " to RoutingTable";
+
+						LOG_TRACE << "[Routing] <" << strCID << ", " << strIP << ":" << Port << ">";
 					}
 				}
 				//TEST
@@ -403,7 +458,7 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 						bool res = peer::PeerManager::info(TargetPeerAddr, strIP, Port);
 						if (false != res)
 						{
-							LOG_TRACE << "Add CID = " << strCID << ", Peer:" << strIP << ":" << Port << " to PartnerTable";
+							LOG_TRACE << "[Partner] <" << strCID << ", " << strIP << ":" << Port << ">";
 						}
 					}
 					//TEST
@@ -424,7 +479,7 @@ std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)
 						bool res = peer::PeerManager::info(TargetPeerAddr, strIP, Port);
 						if (false != res)
 						{
-							LOG_TRACE << "Add CID = " << strCID << ", Peer:" << strIP << ":" << Port << " to RoutingTable";
+							LOG_TRACE << "[Routing] <" << strCID << ", " << strIP << ":" << Port << ">";
 						}
 					}
 					//TEST

@@ -32,7 +32,9 @@ namespace handler
 
 		int8_t handle_routing_search_ack(uint16_t& SessionId, char* pMessage, uint16_t& Len);
 
-		int8_t handle_routing_register(uint16_t& SessionId, char* pMessage, uint16_t& Len);
+		int8_t handle_routing_register_req(uint16_t& SessionId, char* pMessage, uint16_t& Len);
+		
+		int8_t handle_routing_register_ack(uint16_t& SessionId, char* pMessage, uint16_t& Len);
 
 		int8_t handle_routing_partner(uint16_t& SessionId, char* pMessage, uint16_t& Len);
 	private:

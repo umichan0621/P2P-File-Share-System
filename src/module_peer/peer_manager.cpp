@@ -332,4 +332,9 @@ namespace peer
 		}
 		return true;
 	}
+
+	uint16_t PeerManager::connection_num()
+	{
+		return m_SessionNum;
+	}
 }

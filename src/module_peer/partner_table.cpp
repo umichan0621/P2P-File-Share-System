@@ -1,5 +1,5 @@
 ﻿#include "partner_table.h"
-
+#include <base/logger/logger.h>
 namespace peer
 {
 	void PartnerTable::set_partner_max_num(uint16_t PartnerMaxNum)
@@ -9,6 +9,9 @@ namespace peer
 
 	void PartnerTable::add_cid(const base::SHA1& CID)
 	{
+		std::string str;
+		base::sha1_value(CID, str);
+		LOG_DEBUG << "[PARTNER] CID:" << str;
 		std::unique_lock<std::mutex> Lock(m_PartnerMutex);
 		//已经记录
 		if (0 == m_PartnerMap.count(CID))
@@ -128,9 +131,10 @@ namespace peer
 			//当前CID有效
 			if (0 != m_PartnerMap.count(m_CIDList.front()))
 			{
-				CID = m_CIDList.front();
+				base::SHA1 Temp= m_CIDList.front();
+				CID = Temp;
 				m_CIDList.pop_front();
-				m_CIDList.push_back(CID);
+				m_CIDList.push_back(Temp);
 				return true;
 			}
 			else

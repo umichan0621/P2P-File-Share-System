@@ -23,6 +23,15 @@ static const char* DATA_BASE_PATH = "../test_debug.db";
 #else
 static const char* DATA_BASE_PATH = "../test_release.db";
 #endif
+//Tracker列表
+static std::vector<std::pair<const char*, uint16_t>> TRACKER_LIST = {
+	#ifndef _DEBUG
+	{"121.5.179.213",2345}
+	#else
+	{"127.0.0.1",2345}
+	#endif
+	//{"127.0.0.1",2345}
+};
 
 //windows操作系统API封装
 //设置当前粘贴板的内容
@@ -96,6 +105,8 @@ bool AppCtrl::init()
 	{
 		return false;
 	}
+	//初始化Buffer池
+	g_pBufferPoolMgr->init(32, MIN_MTU);
 	//设置Session连接数和路由表Peer记录数
 	g_pPeerManager->init(g_pConfig->max_connection_num(), 1024);
 	//初始化自己的PID
@@ -132,27 +143,34 @@ bool AppCtrl::init()
 void AppCtrl::start()
 {
 	int x;
+
+
 #ifndef _DEBUG//服务器
-	//const char* p = "192.168.50.13";
-	const char* p = "127.0.0.1";
-	//const char* p = "121.5.179.213";
-	uint16_t Session = g_pSessionManager->connect_tracker(p, 42543);
-	std::cin >> x;
-	//m_pThreadPool->add_task(std::bind(&AppCtrl::thread_loop_search, this));
+	//依次连接Tracker
+	for (auto& Tracker : TRACKER_LIST)
+	{
+		uint16_t Session = g_pSessionManager->connect_tracker(Tracker.first, Tracker.second);
+
+	}
+	m_pThreadPool->add_task(std::bind(&AppCtrl::thread_loop_search, this));
 	////启动循环下载线程
 	//m_pThreadPool->add_task(std::bind(&AppCtrl::thread_loop_download, this));
 	m_pMoudleGui->show();
 
 #else//客户端
-	//const char* p = "192.168.50.13";
+	
+	//依次连接Tracker
+	for (auto& Tracker : TRACKER_LIST)
+	{
+		uint16_t Session = g_pSessionManager->connect_tracker(Tracker.first, Tracker.second);
 
-	//const char* p = "127.0.0.1";
-	//const char* p = "121.5.179.213";
-	//uint16_t Session = g_pSessionManager->connect_tracker(p, 2342);
+	}
+
+
 	//启动循环下载线程
-	//m_pThreadPool->add_task(std::bind(&AppCtrl::download_thread, this));
-	//std::cin >> x;
-	//m_pThreadPool->add_task(std::bind(&AppCtrl::thread_loop_search, this));
+	m_pThreadPool->add_task(std::bind(&AppCtrl::thread_loop_download, this));
+
+	m_pThreadPool->add_task(std::bind(&AppCtrl::thread_loop_search, this));
 	m_pMoudleGui->show();
 
 #endif
@@ -291,14 +309,13 @@ void AppCtrl::init_file()
 		for (auto& FileSeq : VecFileSeq)
 		{
 			g_pDataBaseManager->select_file_info(FileSeq, strSHA1);
-			//base::sha1_parse(strSHA1, SHA1Struct);
+			base::sha1_parse(strSHA1, SHA1Struct);
 			g_pDataBaseManager->select_file_info(FileSeq, strFilePath, strFileName, FileSize);
 			//载入文件
 			file::FileCtrlIncmpl* pFileCtrl = new file::FileCtrlIncmpl();
 			bool bRes = pFileCtrl->init(base::utf8_to_string(strFilePath), FileSize);
 			if (false == bRes)
 			{
-				LOG_ERROR << "ADD FAIL";
 
 				//delete pFileCtrl;
 				//删除.ctrl文件
@@ -354,6 +371,7 @@ void AppCtrl::init_file()
 		for (auto& FileSeq : VecFileSeq)
 		{
 			g_pDataBaseManager->select_file_info(FileSeq, strSHA1);
+			base::sha1_parse(strSHA1, SHA1Struct);
 			g_pDataBaseManager->select_file_info(FileSeq, strFilePath, strFileName, FileSize);
 			//载入文件
 			file::FileCtrlCmpl* pFileCtrl = new file::FileCtrlCmpl();
@@ -493,7 +511,6 @@ void AppCtrl::thread_loop_download()
 			{
 				FileCtrl.reset();
 				continue;
-				//LOG_ERROR << "empty";
 			}
 			else
 			{
@@ -537,6 +554,7 @@ void AppCtrl::thread_loop_download()
 				FileCtrl.reset();
 				continue;
 			}
+			//随机一个Peer
 			int32_t RanPos = rand() % PartnerList.size();
 			for (int32_t i = 0; i < PartnerList.size(); ++i)
 			{
@@ -559,15 +577,25 @@ void AppCtrl::thread_loop_download()
 
 void AppCtrl::thread_loop_search()
 {
-	//构造路由搜索协议头，加入固定的PID
+	high_resolution_clock::time_point WakeUpTime = high_resolution_clock::now();
+	//构造路由搜索协议头
 	//协议格式:
-	//[固定头部(2B)] +[PID(20B)]+(0-3个)[CID(20B)]
-	char SendBuf[100] = { 0 };
-	create_header(SendBuf, PROTOCOL_ROUTING_SEARCH_REQ);
-	memcpy(&SendBuf[2], g_pRoutingTable->pid(), KLEN_KEY);
+	//[固定头部(2B)] + (0-3个)[CID(20B)]
+	char SearchBuf[100] = { 0 };
+	create_header(SearchBuf, PROTOCOL_ROUTING_SEARCH_REQ);
+	//构造路由注册协议头，加入固定的PID
+	//协议格式:
+	//[固定头部(2B)] + [PID(20B)]
+	char RegisterBuf[30] = { 0 };
+	create_header(RegisterBuf, PROTOCOL_ROUTING_REGISTER_REQ);
+	memcpy(&RegisterBuf[2], g_pRoutingTable->pid(), KLEN_KEY);
 
-	std::string str;
-	base::sha1_value(g_pRoutingTable->pid(), str);
+	{//TEST
+		std::string str;
+		base::sha1_value(g_pRoutingTable->pid(), str);
+		LOG_ERROR << "Current PID:" << str;
+	}//TEST
+	
 	for (;;)
 	{
 		uint16_t SessionId = g_pPeerManager->register_pop();
@@ -579,7 +607,7 @@ void AppCtrl::thread_loop_search()
 			{
 				continue;
 			}
-			int32_t Pos = 2 + KLEN_KEY;
+			int32_t Pos = 2;
 			//获取3个CID，如果重复说明总的CID不足3个
 			std::unordered_set<base::SHA1, base::SHA1HashFunc, base::SHA1EqualFunc> CIDSet;
 			base::SHA1 CID = { 0 };
@@ -590,18 +618,21 @@ void AppCtrl::thread_loop_search()
 					break;
 				}
 				CIDSet.insert(CID);
-				//base::sha1_value(CID, str);
-				//LOG_ERROR << str;
 			}
 			for (auto& CurCID : CIDSet)
 			{
-				memcpy(&SendBuf[Pos], &CurCID, KLEN_KEY);
+				memcpy(&SearchBuf[Pos], &CurCID, KLEN_KEY);
 				Pos += KLEN_KEY;
 			}
-
-			pCurSession->send_reliable(SendBuf, Pos);
+			{//Test
+				LOG_DEBUG << "Search Session:" << SessionId;
+			}//Test
+				
+			pCurSession->send_reliable(RegisterBuf, 2 + KLEN_KEY);
+			pCurSession->send_reliable(SearchBuf, Pos);
 		}
-		base::delay_micro(1 * 1000 * 1000);
+		WakeUpTime += microseconds(1 * 1000 * 1000);
+		std::this_thread::sleep_until(WakeUpTime);
 	}
 }
 
@@ -666,7 +697,7 @@ bool AppCtrl::try_add_download_file(std::string& strLink, std::string& strPath)
 	}
 	//创建本地文件
 	file::FileCtrlIncmpl* pFileCtrl = new file::FileCtrlIncmpl();
-	pFileCtrl->set_file_seq(FileSeq);
+	
 	LOG_ERROR << strPath;
 	std::string strFilePath = strPath;
 	if (strFilePath.back() != '/')
@@ -685,13 +716,15 @@ bool AppCtrl::try_add_download_file(std::string& strLink, std::string& strPath)
 	}
 	else
 	{
+		pFileCtrl->set_file_seq(FileSeq);
 		pFileCtrl->set_sha1(SHA1Struct);
 		//数据库持久化
 		g_pDataBaseManager->insert_file_info(FileSeq, strSHA1, STATUS_DOWNLOAD, strFilePath, FileSize);
 		g_pDataBaseManager->update_file_info(FileSeq, FileName, "");
 		g_pFileManager->add_download_file(pFileCtrl);
 		g_pFileManager->refresh_download_list();
-
+		//加入PartnerTable
+		g_pPartnerTable->add_cid(SHA1Struct);
 		{//GUI显示
 			emit(add_file(FileSeq));
 			emit(new_download(FileSeq));
@@ -730,20 +763,22 @@ void AppCtrl::thread_add_share_file(std::string& strRemark, std::string& strPath
 	bool bRes = g_pDataBaseManager->insert_file_info(FileSeq, strSHA1, STATUS_SHARE, strPath, FileSize);
 	if (false == bRes)
 	{
-		//LOG_TRACE <<
 		return;
 	}
 
 	std::string FileName = base::string_to_utf8(pFileCtrl->file_name());
 	bRes = g_pDataBaseManager->update_file_info(FileSeq, FileName, strRemark);
-	//std::string CreateTime;
-	//bRes = g_pDataBaseManager->select_create_time(FileSeq, CreateTime);
 
-	//QString Temp = QString::fromStdString(FileName);
+
+	pFileCtrl->set_file_seq(FileSeq);
+	pFileCtrl->set_sha1(SHA1Struct);
+	g_pFileManager->add_download_file(pFileCtrl);
+	g_pFileManager->refresh_download_list();
+	//加入PartnerTable
+	g_pPartnerTable->add_cid(SHA1Struct);
 	{//GUI显示
+		emit(new_download(FileSeq));
 		emit(add_file(FileSeq));
 		emit(new_share(FileSeq));
 	}//GUI显示
-
-	//加入内存
 }
