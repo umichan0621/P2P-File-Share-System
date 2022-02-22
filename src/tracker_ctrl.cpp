@@ -14,7 +14,7 @@ TrackerCtrl::TrackerCtrl():
 
 TrackerCtrl::~TrackerCtrl(){}
 
-bool TrackerCtrl::init()
+bool TrackerCtrl::init(uint16_t Port, uint16_t Port6)
 {
 	init_config();
 	uint16_t ThreadNum = 4;
@@ -31,11 +31,7 @@ bool TrackerCtrl::init()
 	g_pPeerManager->init(g_pConfig->max_connection_num(), 1024);
 	//初始化自己的PID
 	g_pRoutingTable->init();
-
-	//LOG_ERROR << g_pConfig->max_connection_num();
 	//初始化被动接收的Net模块
-	uint16_t Port, Port6;
-	g_pConfig->port(Port, Port6);
 	if (false == m_pMoudleNet->init(
 		g_pConfig->max_connection_num(), Port, Port6))
 	{

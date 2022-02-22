@@ -66,7 +66,7 @@ static bool second_try_connect_peer(base::SHA1 CID, uint16_t TargetSessionId)
 			bool res2 = peer::PeerManager::info(TargetPeerAddr, strIP, Port);
 			if (res2)
 			{
-				LOG_TRACE << "Can't connect Peer " << strIP << ":" << Port << " maybe because NAT or offline.";
+				LOG_TRACE << "Can not connect [" << strIP << ":" << Port << "], reason: NAT/Offline.";
 			}
 		}
 		//Test

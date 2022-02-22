@@ -55,24 +55,6 @@ private://初始化
 	//计算文件的SHA1值，然后与实际的SHA1值比较
 	//结果一致表示下载完成，否则可能有问题
 	void thread_sha1_check(file::FileCtrl FileCtrl);
-signals://信号
-	//向文件管理系统添加一个文件/文件夹
-	void add_file(int32_t FileSeq);
-
-	//新的下载任务
-	void new_download(int32_t FileSeq);
-	
-	//新的分享文件
-	void new_share(int32_t FileSeq);
-	
-	//更新下载进度
-	void update_progress(int32_t FileSeq, uint64_t CurFileSize, uint64_t CurSpeed);
-
-	//文件下载完成
-	void file_complete(int32_t FileSeq);
-
-	//移动指定文件到指定文件夹
-	void file_move_to(int32_t FileSeq, int32_t FileParent);
 private://各个模块
 	MoudleGui*					m_pMoudleGui;
 	MoudleNet*					m_pMoudleNet;

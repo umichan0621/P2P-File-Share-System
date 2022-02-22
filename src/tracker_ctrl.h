@@ -17,7 +17,7 @@ public:
 	TrackerCtrl();
 	~TrackerCtrl();
 public:
-	bool init();
+	bool init(uint16_t Port, uint16_t Port6);
 	void init_config();
 	void output(const std::string& strCommand);
 private://各个模块
