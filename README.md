@@ -5,3 +5,6 @@
 - 可构造通用的去中心化P2P网络，异构P2P应用程序之间也可提供路由寻址。
 
 ![download](https://github.com/umichan0621/P2P-File-Share-System/blob/main/picture/download.png)
+![my_file](https://github.com/umichan0621/P2P-File-Share-System/blob/main/picture/my_file.png)
+![download_link](https://github.com/umichan0621/P2P-File-Share-System/blob/main/picture/download_link.png)
+![share_file](https://github.com/umichan0621/P2P-File-Share-System/blob/main/picture/share_file.png)
