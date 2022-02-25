@@ -146,7 +146,7 @@ namespace database
 		return true;
 	}
 
-	bool DataBaseManager::update_file_info(int32_t FileSeq, int8_t FileType)
+	bool DataBaseManager::update_file_type(int32_t FileSeq, int8_t FileType)
 	{
 		string strSql = "UPDATE FILE_INFO SET \
                     FILE_TYPE = " + to_string(FileType) +

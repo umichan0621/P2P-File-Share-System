@@ -244,6 +244,35 @@ namespace gui
 		refresh();
 	}
 
+	void MyFile::clear_file(int32_t FileSeq)
+	{
+		std::lock_guard<std::mutex> Lock(m_MyFileMutex);
+		if (0 != m_FileMap.count(FileSeq))
+		{
+			{//删除My File逻辑文件夹内的文件/文件夹
+			//从上一级文件夹中删除
+				int32_t Parent = m_FileMap[FileSeq].Parent;
+				for (int32_t i = 0; i < m_FolderMap[Parent].size(); ++i)
+				{
+					if (m_FolderMap[Parent][i] == FileSeq)
+					{
+						std::swap(m_FolderMap[Parent][i], m_FolderMap[Parent].back());
+						m_FolderMap[Parent].pop_back();
+						break;
+					}
+				}
+				m_FileMap.erase(FileSeq);
+				m_FolderMap.erase(FileSeq);
+				if (Parent == m_pCurFolder)
+				{
+					refresh();
+				}
+
+			}//删除My File逻辑文件夹内的文件/文件夹
+		}
+		
+	}
+
 	Folder MyFile::folder_info()
 	{
 		std::lock_guard<std::mutex> Lock(m_MyFileMutex);

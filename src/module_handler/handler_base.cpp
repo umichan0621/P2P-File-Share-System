@@ -5,9 +5,7 @@
 #include <module_net/net/nat_type.hpp>
 #include <module_net/session_manager.h>
 #include <module_peer/routing_table.h>
-#ifndef TRACKER_MODE
 #include <module_peer/partner_table.h>
-#endif
 #define BASE_REGISTER(_FUNC) std::bind(&HandlerBase::_FUNC,this, \
 std::placeholders::_1, std::placeholders::_2, std::placeholders::_3) 
 
@@ -26,7 +24,6 @@ static bool heartbeat_probe(uint16_t SessionId)
 	}
 	//所有数据包都会重置超时次数，如果当前超时次数为0，这时得到1
 	uint8_t TimeoutCount = pCurSession->timeout();
-	//LOG_TRACE << "TIME OUT " << TimeoutCount;
 
 	//=2表示当前时间段内没有数据传输，发送一个心跳包检测
 	if (2 == TimeoutCount)
@@ -46,87 +43,6 @@ static bool heartbeat_probe(uint16_t SessionId)
 	return false;
 }
 
-static bool second_try_connect_peer(base::SHA1 CID, uint16_t TargetSessionId)
-{
-	static uint16_t TriggerTimes = 0;
-	net::Session* pTargetSession = g_pSessionManager->session(TargetSessionId);
-	if (nullptr == pTargetSession)
-	{
-		return true;
-	}
-	//连接服务器超时
-	if (++TriggerTimes >= CONNECT_TIMEOUT_COUNT)
-	{
-		//Test
-		{
-			std::string strIP;
-			uint16_t Port;
-			PeerAddress TargetPeerAddr = { 0 };
-			pTargetSession->get_peer_addr(TargetPeerAddr);
-			bool res2 = peer::PeerManager::info(TargetPeerAddr, strIP, Port);
-			if (res2)
-			{
-				LOG_TRACE << "Can not connect [" << strIP << ":" << Port << "], reason: NAT/Offline.";
-			}
-		}
-		//Test
-		g_pSessionManager->disconnect_in_timer(TargetSessionId);
-		return true;
-	}
-	char pMessage[2];
-	//如果之前建立了连接，对端可能还保持着连接信息，让它先断开
-	if (1 == TriggerTimes)
-	{
-		create_header(pMessage, PROTOCOL_BASE_DISCONNECT);
-		pTargetSession->send(pMessage, BASE_HEADER_LEN);
-	}
-	SessionStatus CurStatus = pTargetSession->status();
-	//连接失败，结束定时器
-	if (SessionStatus::STATUS_NULL == CurStatus)
-	{
-		return true;
-	}
-
-	//已连接，结束定时器,CID加入RoutingTable或者PartnerTable
-	if (SessionStatus::STATUS_CONNECT_COMPLETE == CurStatus)
-	{
-#ifndef TRACKER_MODE
-		//如果命中PartnerTable
-		if (true == g_pPartnerTable->search_cid(CID))
-		{
-			g_pPartnerTable->add_partner(CID, TargetSessionId);
-			return true;
-		}
-#endif
-		//加入路由表
-		PeerAddress TargetPeerAddr = { 0 };
-		pTargetSession->get_peer_addr(TargetPeerAddr);
-		int32_t PeerId = g_pPeerManager->peer_id(TargetPeerAddr);
-		if (PeerId >= 0)
-		{
-			peer::Node CurNode(CID.Hash, PeerId);
-			g_pRoutingTable->add_node(CurNode);
-		}
-		return true;
-	}
-
-	//当前未ping成功
-	if (SessionStatus::STATUS_DISCONNECT == CurStatus)
-	{
-		create_header(pMessage, PROTOCOL_BASE_PING_REQ);
-	}
-	else
-	{
-		create_header(pMessage, PROTOCOL_BASE_CONNECT_REQ);
-	}
-	pTargetSession->send(pMessage, BASE_HEADER_LEN);
-	return false;
-}
-
-static bool try_ping_peer(uint16_t TargetSessionId)
-{
-
-}
 //定时器事件
 
 namespace handler
@@ -204,7 +120,7 @@ namespace handler
 			pCurSession->set_status(SessionStatus::STATUS_CONNECT_COMPLETE);
 			//定时检测超时状态，然后发送心跳包
 			g_pTimer->add_timer(HEARTBEAT_CLOCK, std::bind(heartbeat_probe, SessionId));
-			//连接成功，接下来需要查询PID和CID
+			//连接成功，接下来需要注册PID和查询CID
 			g_pPeerManager->register_push(SessionId);
 			{//TEST
 				std::string strIP;
@@ -307,36 +223,29 @@ namespace handler
 		//如果NAT没问题可以实现UDP打洞
 		//继续尝试连接
 		PeerAddress TargetPeerAddr = { 0 };
-		memcpy(&TargetPeerAddr, &pMessage[2], KSOCKADDR_LEN_V6);
-		uint16_t TargetSessionId = g_pPeerManager->session_id(TargetPeerAddr);
-		if (0 != TargetSessionId && ERROR_SESSION_ID != TargetSessionId)
-		{
-			const uint8_t* pKey = (uint8_t*)&pMessage[30];
-			base::SHA1 CID = { 0 };
-			memcpy(&CID, pKey, 20);
-			if (false == g_pTimer->add_timer(3 * PING_RTT, std::bind(second_try_connect_peer, CID, TargetSessionId)))
+		memcpy(&TargetPeerAddr, &pMessage[BASE_HEADER_LEN], KSOCKADDR_LEN_V6);
+		const uint8_t* pKey = (uint8_t*)&pMessage[30];
+		base::SHA1 CID = { 0 };
+		memcpy(&CID, pKey, 20);
+		g_pSessionManager->connect_peer(CID, TargetPeerAddr);
+	
+		{//TEST
+			std::string strIP, strIP1;
+			uint16_t Port, Port1;
+			net::Session* pAckSession = g_pSessionManager->session(SessionId);
+			PeerAddress AckPeerAddr = { 0 };
+			pAckSession->get_peer_addr(AckPeerAddr);
+			if (nullptr != pAckSession)
 			{
-				LOG_ERROR << "Fail to create connect tracker timer...";
-			}
-			//TEST
-			{
-				std::string strIP, strIP1;
-				uint16_t Port, Port1;
-				net::Session* pAckSession = g_pSessionManager->session(SessionId);
-				PeerAddress AckPeerAddr = { 0 };
-				pAckSession->get_peer_addr(AckPeerAddr);
-				if (nullptr != pAckSession)
+				bool res1 = peer::PeerManager::info(AckPeerAddr, strIP, Port);
+				bool res2 = peer::PeerManager::info(TargetPeerAddr, strIP1, Port1);
+				if (res1 && res2)
 				{
-					bool res1 = peer::PeerManager::info(AckPeerAddr, strIP, Port);
-					bool res2 = peer::PeerManager::info(TargetPeerAddr, strIP1, Port1);
-					if (res1 && res2)
-					{
-						LOG_TRACE << strIP << ":" << Port << " will help me to connect " << strIP1 << ":" << Port1;
-					}
+					LOG_TRACE << strIP << ":" << Port << " will help me to connect " << strIP1 << ":" << Port1;
 				}
 			}
-			//TEST
-		}
+		}//TEST
+		
 		return DO_NOTHING;
 	}
 
@@ -391,7 +300,7 @@ namespace handler
 	int8_t HandlerBase::handle_ping_help(uint16_t& SessionId, char* pMessage, uint16_t& Len)
 	{
 		PeerAddress TargetPeerAddr = { 0 };
-		memcpy(&TargetPeerAddr, &pMessage[2], KSOCKADDR_LEN_V6);
+		memcpy(&TargetPeerAddr, &pMessage[BASE_HEADER_LEN], KSOCKADDR_LEN_V6);
 		g_pSessionManager->ping_peer(TargetPeerAddr);
 		//TEST
 		{

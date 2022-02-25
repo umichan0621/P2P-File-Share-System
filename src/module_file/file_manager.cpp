@@ -82,10 +82,15 @@ namespace file
 	bool FileManager::kill_download_file(int32_t FileSeq)
 	{
 		std::lock_guard<std::mutex> Lock(m_FileMgrMutex);
+		if (0 == m_FileMap.count(FileSeq))
+		{
+			return false;
+		}
 		base::SHA1 SHA1Struct;
 		m_FileMap[FileSeq]->full_sha1(SHA1Struct);
 		m_SeqMap.erase(SHA1Struct);
 		m_FileMap.erase(FileSeq);
+		m_CurDownload = 0;
 		//检查下载队列
 		for (auto It = m_DownloadList.begin(); It != m_DownloadList.end(); ++It)
 		{
@@ -113,6 +118,7 @@ namespace file
 		LOG_ERROR << "CHECK";
 		//校验当前下载文件的SHA1值
 		std::unique_lock<std::mutex> Lock(m_FileMgrMutex);
+		m_CurDownload = 0;
 		//从下载队列移除
 		for (auto It = m_DownloadList.begin(); It != m_DownloadList.end(); ++It)
 		{

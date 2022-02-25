@@ -55,7 +55,7 @@ namespace gui
 	public:
 		MyFile(QWidget* Parent = Q_NULLPTR);
 		void set_style(const QString& Style, const QString& Language);
-
+		void clear_file(int32_t FileSeq);
 		Folder folder_info();
 	private:
 

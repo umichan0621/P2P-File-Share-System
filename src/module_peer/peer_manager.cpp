@@ -150,7 +150,22 @@ namespace peer
 		}
 		return 	m_SessionIdMap[PeerAddr];
 	}
-
+	
+	uint16_t PeerManager::session_id(int32_t PeerId)
+	{
+		std::lock_guard<std::mutex> Lock(m_PeerManagerMutex);
+		if (GOOD == m_PeerMap[PeerId].Status)
+		{
+			const PeerAddress& PeerAddr = m_PeerMap[PeerId].PeerAddr;
+			if (0 == m_SessionIdMap.count(PeerAddr))
+			{
+				return 0;
+			}
+			return 	m_SessionIdMap[PeerAddr];
+		}
+		return 0;
+	}
+	
 	uint16_t PeerManager::connect_peer(const PeerAddress& PeerAddr)
 	{
 		std::unique_lock<std::mutex> Lock(m_PeerManagerMutex);

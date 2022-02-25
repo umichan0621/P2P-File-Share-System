@@ -25,11 +25,11 @@ static const char* DATA_BASE_PATH = "../test_release.db";
 #endif
 //Tracker列表
 static std::vector<std::pair<const char*, uint16_t>> TRACKER_LIST = {
-	#ifndef _DEBUG
-	{"121.5.179.213",2234}
-	#else
-	{"127.0.0.1",2345}
-	#endif
+	//#ifdef _DEBUG
+	{"121.5.179.213",2248}
+	//#else
+	//{"127.0.0.1",2345}
+	//#endif
 	//{"127.0.0.1",2345}
 };
 
@@ -149,6 +149,7 @@ void AppCtrl::start()
 	//依次连接Tracker
 	for (auto& Tracker : TRACKER_LIST)
 	{
+		LOG_ERROR <<"Tracker<"<< Tracker.first << ":" << Tracker.second<<">";
 		uint16_t Session = g_pSessionManager->connect_tracker(Tracker.first, Tracker.second);
 
 	}
@@ -189,6 +190,7 @@ void AppCtrl::init_slots()
 				bool bRes = g_pDataBaseManager->delete_file_info(FileSeq);
 				if (true == bRes)
 				{
+					m_pMoudleGui->my_file()->clear_file(FileSeq);
 					g_pFileManager->kill_download_file(FileSeq);
 				}
 			});
@@ -199,6 +201,7 @@ void AppCtrl::init_slots()
 				bool bRes = g_pDataBaseManager->delete_file_info(FileSeq);
 				if (true == bRes)
 				{
+					m_pMoudleGui->my_file()->clear_file(FileSeq);
 					g_pFileManager->kill_share_file(FileSeq);
 				}
 			});
@@ -324,7 +327,6 @@ void AppCtrl::init_file()
 				g_pPartnerTable->add_cid(SHA1Struct);
 				{//GUI显示
 					emit(m_pMoudleGui->my_file()->show_my_file(FileSeq));
-					//m_pMoudleGui->download_list()->show
 					emit(m_pMoudleGui->download_list()->show_download(FileSeq));
 				}//GUI显示
 			}
@@ -641,7 +643,8 @@ void AppCtrl::thread_sha1_check(file::FileCtrl FileCtrl)
 	int32_t FileSeq = FileCtrl->file_seq();
 	if (true == sha1_equal(ActrualSHA1Struct, SHA1Struct))
 	{
-		LOG_ERROR << "SHA1 CHECK OK";
+		LOG_ERROR << "File["<<FileSeq <<"] Complete";
+		g_pDataBaseManager->update_file_type(FileSeq, STATUS_COMPLETE);
 		emit(m_pMoudleGui->download_list()->file_complete(FileSeq));
 	}
 	else
@@ -721,6 +724,29 @@ bool AppCtrl::try_add_download_file(std::string& strLink, std::string& strPath)
 		g_pFileManager->refresh_download_list();
 		//加入PartnerTable
 		g_pPartnerTable->add_cid(SHA1Struct);
+		{//借助路由表查询当前CID
+		//构造路由搜索协议
+			char SearchBuf[22] = { 0 };
+			create_header(SearchBuf, PROTOCOL_ROUTING_SEARCH_REQ);
+			memcpy(&SearchBuf[2], &SHA1Struct, KLEN_KEY);
+			std::unordered_set<int32_t> PeerSet;
+			g_pRoutingTable->get_node(SHA1Struct.Hash, PeerSet);
+			LOG_ERROR << PeerSet.size();
+			for (auto& PeerId : PeerSet)
+			{
+				uint16_t SessionId = g_pPeerManager->session_id(PeerId);
+				LOG_ERROR << SessionId;
+
+				if (0 != SessionId)
+				{
+					net::Session* pCurSession = g_pSessionManager->session(SessionId);
+					if (nullptr != pCurSession)
+					{
+						pCurSession->send_reliable(SearchBuf, 22);
+					}
+				}
+			}
+		}//借助路由表查询当前CID
 		{//GUI显示
 			emit(m_pMoudleGui->my_file()->show_my_file(FileSeq));
 			emit(m_pMoudleGui->download_list()->show_download(FileSeq));
@@ -764,14 +790,33 @@ void AppCtrl::thread_add_share_file(std::string& strRemark, std::string& strPath
 
 	std::string FileName = base::string_to_utf8(pFileCtrl->file_name());
 	bRes = g_pDataBaseManager->update_file_info(FileSeq, FileName, strRemark);
-
-
 	pFileCtrl->set_file_seq(FileSeq);
 	pFileCtrl->set_sha1(SHA1Struct);
-	g_pFileManager->add_download_file(pFileCtrl);
-	g_pFileManager->refresh_download_list();
+
+	g_pFileManager->add_share_file(pFileCtrl);
 	//加入PartnerTable
 	g_pPartnerTable->add_cid(SHA1Struct);
+	{//借助路由表查询当前CID
+		//构造路由搜索协议
+		char SearchBuf[22] = { 0 };
+		create_header(SearchBuf, PROTOCOL_ROUTING_SEARCH_REQ);
+		memcpy(&SearchBuf[2], &SHA1Struct, KLEN_KEY);
+		std::unordered_set<int32_t> PeerSet;
+		g_pRoutingTable->get_node(SHA1Struct.Hash, PeerSet);
+		for (auto& PeerId : PeerSet)
+		{
+			uint16_t SessionId = g_pPeerManager->session_id(PeerId);
+			if (0 != SessionId)
+			{
+				net::Session* pCurSession = g_pSessionManager->session(SessionId);
+				if (nullptr != pCurSession)
+				{
+					pCurSession->send_reliable(SearchBuf, 22);
+				}
+			}
+		}
+	}//借助路由表查询当前CID
+
 	{//GUI显示
 		emit(m_pMoudleGui->download_list()->show_download(FileSeq));
 		emit(m_pMoudleGui->my_file()->show_my_file(FileSeq));

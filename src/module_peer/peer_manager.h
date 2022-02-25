@@ -131,6 +131,10 @@ namespace peer
 		//返回0xffff表示sockaddr有误
 		uint16_t session_id(const PeerAddress& PeerAddr);
 
+		//根据输入的PeerId得到一个已连接的SessionId
+		//返回0表示连接已断开
+		uint16_t session_id(int32_t PeerId);
+
 		//成功返回分配的SessionId，失败返回0xffff
 		//连接成功后Peer状态为Good
 		uint16_t connect_peer(const PeerAddress& PeerAddr);
@@ -169,12 +173,12 @@ namespace peer
 		std::mutex					m_PeerManagerMutex;
 	private://Peer相关
 		int32_t						m_PeerCapacity;		//Peer上限
-		PeerIdMap					m_PeerIdMap;		//Sockaddr*->PeerId的映射
+		PeerIdMap					m_PeerIdMap;		//PeerAddress->PeerId的映射
 		PeerMap						m_PeerMap;			//PeerId->Peer的映射
 	private://Session相关
 		uint16_t					m_SessionCapacity;	//Session上限
 		uint16_t					m_SessionNum;		//当前Session数
-		SessionIdMap				m_SessionIdMap;		//Sockaddr*->SessionId的映射
+		SessionIdMap				m_SessionIdMap;		//PeerAddress->SessionId的映射
 		std::list<uint16_t>			m_SessionIdQueue;	//用于分配未使用的SessionId
 	private:
 		std::list<uint16_t>			m_PrepareToRegister;//等待发起登录的Session

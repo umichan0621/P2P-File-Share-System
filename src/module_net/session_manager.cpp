@@ -3,11 +3,11 @@
 #include <base/config.hpp>
 #include <base/logger/logger.h>
 #include <base/protocol/protocol_base.h>
+#include <base/protocol/protocol_routing.h>
 #include <module_net/net/nat_type.hpp>
 #include <module_peer/routing_table.h>
-#ifndef TRACKER_MODE
 #include <module_peer/partner_table.h>
-#endif
+
 //定时器任务
 static bool try_connect_tracker(uint16_t SessionId)
 {
@@ -139,7 +139,7 @@ static bool check_connect_peer_status(uint16_t SessionId)
 
 }
 
-static bool try_connect_peer_once(base::SHA1 CID, uint16_t SessionId)
+static bool try_connect_peer(base::SHA1 CID, uint16_t SessionId)
 {
 	static uint16_t TriggerTimes = 0;
 	net::Session* pCurSession = g_pSessionManager->session(SessionId);
@@ -153,16 +153,16 @@ static bool try_connect_peer_once(base::SHA1 CID, uint16_t SessionId)
 		g_pSessionManager->disconnect_in_timer(SessionId);
 		{//Test
 			LOG_DEBUG << "Fail to connect session:" << SessionId << ", reason:offline.";
-
 		}//Test
 		return true;
 	}
-	char pMessage[2];
+	
 	//如果之前建立了连接，对端可能还保持着连接信息，让它先断开
 	if (1 == TriggerTimes)
 	{
-		create_header(pMessage, PROTOCOL_BASE_DISCONNECT);
-		pCurSession->send(pMessage, BASE_HEADER_LEN);
+		char pSendBuf[BASE_HEADER_LEN];
+		create_header(pSendBuf, PROTOCOL_BASE_DISCONNECT);
+		pCurSession->send(pSendBuf, BASE_HEADER_LEN);
 	}
 	SessionStatus CurStatus = pCurSession->status();
 	//连接失败，结束定时器
@@ -170,57 +170,45 @@ static bool try_connect_peer_once(base::SHA1 CID, uint16_t SessionId)
 	{
 		return true;
 	}
-
-	//已连接，结束定时器,CID加入RoutingTable或者PartnerTable
+	//已连接，结束定时器，发送路由搜索协议
 	if (SessionStatus::STATUS_CONNECT_COMPLETE == CurStatus)
 	{
-
-#ifndef TRACKER_MODE
-		//如果命中PartnerTable
-		if (true == g_pPartnerTable->search_cid(CID))
-		{
-			g_pPartnerTable->add_partner(CID, SessionId);
-			return true;
-		}
-#endif
-		//加入路由表
-		PeerAddress CurAddr = { 0 };
-		pCurSession->get_peer_addr(CurAddr);
-		int32_t PeerId = g_pPeerManager->peer_id(CurAddr);
-		if (PeerId >= 0)
-		{
-			peer::Node CurNode(CID.Hash, PeerId);
-			g_pRoutingTable->add_node(CurNode);
-		}
+		char pSendBuf[BASE_HEADER_LEN + KLEN_KEY] = { 0 };
+		create_header(pSendBuf, PROTOCOL_ROUTING_SEARCH_REQ);
+		memcpy(&pSendBuf[BASE_HEADER_LEN], &CID, KLEN_KEY);
+		pCurSession->send(pSendBuf, BASE_HEADER_LEN);
 		return true;
 	}
-
 	//当前未ping成功
 	if (SessionStatus::STATUS_DISCONNECT == CurStatus)
 	{
-		create_header(pMessage, PROTOCOL_BASE_PING_REQ);
+		char pSendBuf[BASE_HEADER_LEN] = { 0 };
+		create_header(pSendBuf, PROTOCOL_BASE_PING_REQ);
+		pCurSession->send(pSendBuf, BASE_HEADER_LEN);
 	}
+	//ping成功之后发送连接协议
 	else
 	{
-		create_header(pMessage, PROTOCOL_BASE_CONNECT_REQ);
+		char pSendBuf[BASE_HEADER_LEN] = { 0 };
+		create_header(pSendBuf, PROTOCOL_BASE_CONNECT_REQ);
+		pCurSession->send(pSendBuf, BASE_HEADER_LEN);
 	}
-	pCurSession->send(pMessage, BASE_HEADER_LEN);
 	return false;
 }
 
-static bool first_try_connect_peer(base::SHA1 CID, uint16_t TargetSessionId, uint16_t RealySessionId)
+static bool try_connect_peer_relay(base::SHA1 CID, uint16_t TargetSessionId, uint16_t RealySessionId)
 {
-	//先尝试直接连接，如果连不上通过中间节点再尝试连接
+	//先尝试直接连接，如果连不上通过中间Peer再尝试连接
 	static uint16_t TriggerTimes = 0;
 	net::Session* pTargetSession = g_pSessionManager->session(TargetSessionId);
 	if (nullptr == pTargetSession)
 	{
 		return true;
 	}
-	//连接服务器超时
+	//连接服务器超时，尝试借助中间Peer连接
 	if (++TriggerTimes >= CONNECT_TIMEOUT_COUNT)
 	{
-		LOG_DEBUG << "fail to connect, will try connect by relay node.";
+		LOG_DEBUG << "Fail to connect, will try connect by relay node.";
 		//尝试通过中间节点连接，然后终止当前任务
 		net::Session* pRelaySession = g_pSessionManager->session(RealySessionId);
 		if (nullptr == pRelaySession)
@@ -231,10 +219,11 @@ static bool first_try_connect_peer(base::SHA1 CID, uint16_t TargetSessionId, uin
 		pTargetSession->get_peer_addr(TargetAddr);
 		char SendBuf[50] = { 0 };
 		create_header(SendBuf, PROTOCOL_BASE_CONNECT_HELP_REQ);
-		memcpy(&SendBuf[2], &TargetAddr, KSOCKADDR_LEN_V6);
-		memcpy(&SendBuf[2 + KSOCKADDR_LEN_V6], &CID, KLEN_KEY);
+		memcpy(&SendBuf[BASE_HEADER_LEN], &TargetAddr, KSOCKADDR_LEN_V6);
+		memcpy(&SendBuf[BASE_HEADER_LEN + KSOCKADDR_LEN_V6], &CID, KLEN_KEY);
 		//向中间节点发送请求
 		pRelaySession->send_reliable(SendBuf, 50);
+
 		//添加定时器，10s后如果没有连接成功直接释放连接
 		if (false == g_pTimer->add_timer_lockless(10 * 1000,
 			std::bind(check_connect_peer_status, TargetSessionId)))
@@ -243,12 +232,12 @@ static bool first_try_connect_peer(base::SHA1 CID, uint16_t TargetSessionId, uin
 		}
 		return true;
 	}
-	char pMessage[2];
 	//如果之前建立了连接，对端可能还保持着连接信息，让它先断开
 	if (1 == TriggerTimes)
 	{
-		create_header(pMessage, PROTOCOL_BASE_DISCONNECT);
-		pTargetSession->send(pMessage, BASE_HEADER_LEN);
+		char pSendBuf[BASE_HEADER_LEN] = { 0 };
+		create_header(pSendBuf, PROTOCOL_BASE_DISCONNECT);
+		pTargetSession->send(pSendBuf, BASE_HEADER_LEN);
 	}
 	SessionStatus CurStatus = pTargetSession->status();
 	//连接失败，结束定时器
@@ -256,47 +245,34 @@ static bool first_try_connect_peer(base::SHA1 CID, uint16_t TargetSessionId, uin
 	{
 		return true;
 	}
-
-	//已连接，结束定时器,CID加入RoutingTable或者PartnerTable
+	//已连接，结束定时器，发送路由搜索协议
 	if (SessionStatus::STATUS_CONNECT_COMPLETE == CurStatus)
 	{
-
-#ifndef TRACKER_MODE
-		//如果命中PartnerTable
-		if (true == g_pPartnerTable->search_cid(CID))
-		{
-			g_pPartnerTable->add_partner(CID, TargetSessionId);
-			return true;
-		}
-#endif
-		//加入路由表
-		PeerAddress TargetAddr = { 0 };
-		pTargetSession->get_peer_addr(TargetAddr);
-		int32_t PeerId = g_pPeerManager->peer_id(TargetAddr);
-		if (PeerId >= 0)
-		{
-			peer::Node CurNode(CID.Hash, PeerId);
-			g_pRoutingTable->add_node(CurNode);
-		}
-		//加入查询队列
-		g_pPeerManager->register_push(TargetSessionId);
+		char pSendBuf[BASE_HEADER_LEN+KLEN_KEY] = { 0 };
+		create_header(pSendBuf, PROTOCOL_ROUTING_SEARCH_REQ);
+		memcpy(&pSendBuf[BASE_HEADER_LEN], &CID, KLEN_KEY);
+		pTargetSession->send(pSendBuf, BASE_HEADER_LEN);
 		return true;
 	}
 
 	//当前未ping成功
 	if (SessionStatus::STATUS_DISCONNECT == CurStatus)
 	{
-		create_header(pMessage, PROTOCOL_BASE_PING_REQ);
+		char pSendBuf[BASE_HEADER_LEN] = { 0 };
+		create_header(pSendBuf, PROTOCOL_BASE_PING_REQ);
+		pTargetSession->send(pSendBuf, BASE_HEADER_LEN);
 	}
+	//ping成功之后发送连接协议
 	else
 	{
-		create_header(pMessage, PROTOCOL_BASE_CONNECT_REQ);
+		char pSendBuf[BASE_HEADER_LEN] = { 0 };
+		create_header(pSendBuf, PROTOCOL_BASE_CONNECT_REQ);
+		pTargetSession->send(pSendBuf, BASE_HEADER_LEN);
 	}
-	pTargetSession->send(pMessage, BASE_HEADER_LEN);
 	return false;
 }
 
-static bool try_ping_peer_once(uint16_t TargetSessionId)
+static bool try_ping_peer(uint16_t TargetSessionId)
 {
 	static uint16_t TriggerTimes = 0;
 	if (TriggerTimes == PING_TIMEOUT_COUNT)
@@ -426,7 +402,7 @@ namespace net
 	void SeesionManager::connect_peer(base::SHA1 CID, uint16_t RelaySessionId, const PeerAddress& PeerAddr)
 	{
 		uint16_t TargetSessionId = g_pPeerManager->session_id(PeerAddr);
-		//当前Session已经连接或者输入的sockaddr有问题
+		//当前Session已经连接或者输入的PeerAddress有问题
 		if (0 != TargetSessionId)
 		{
 			return;
@@ -442,7 +418,7 @@ namespace net
 		{
 			return;
 		}
-		if (false == g_pTimer->add_timer(PING_RTT, std::bind(first_try_connect_peer, CID, TargetSessionId, RelaySessionId)))
+		if (false == g_pTimer->add_timer(PING_RTT, std::bind(try_connect_peer_relay, CID, TargetSessionId, RelaySessionId)))
 		{
 			LOG_ERROR << "Fail to create connect peer timer...";
 		}
@@ -467,7 +443,7 @@ namespace net
 		{
 			return;
 		}
-		if (false == g_pTimer->add_timer(PING_RTT, std::bind(try_connect_peer_once, CID, SessionId)))
+		if (false == g_pTimer->add_timer(PING_RTT, std::bind(try_connect_peer, CID, SessionId)))
 		{
 			LOG_ERROR << "Fail to create connect tracker timer...";
 		}
@@ -476,7 +452,7 @@ namespace net
 	void SeesionManager::ping_peer(const PeerAddress& PeerAddr)
 	{
 		uint16_t SessionId = g_pPeerManager->session_id(PeerAddr);
-		//当前Session已经连接或者输入的sockaddr有问题
+		//当前Session已经连接或者输入的PeerAddress有问题
 		if (0 != SessionId)
 		{
 			return;
@@ -492,7 +468,7 @@ namespace net
 		{
 			return;
 		}
-		if (false == g_pTimer->add_timer(3 * PING_RTT, std::bind(try_ping_peer_once, SessionId)))
+		if (false == g_pTimer->add_timer(3 * PING_RTT, std::bind(try_ping_peer, SessionId)))
 		{
 			LOG_ERROR << "Fail to create connect tracker timer...";
 		}
