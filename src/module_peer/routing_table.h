@@ -1,13 +1,11 @@
 ﻿/***********************************************************************/
-/* 名称:													   */
-/* 说明:										   */
+/* 名称:路由表													       */
+/* 说明:维护与自己不相关的CID的信息，用于协助其他Peer寻址			   */
 /* 创建时间:2022/01/07												   */
 /* Email:umichan0621@gmail.com									       */
 /***********************************************************************/
 #include "routing/k_bucket.h"
 #include <base/singleton.hpp>
-
-
 
 namespace peer
 {
@@ -30,7 +28,9 @@ namespace peer
 
 		//查询Key，返回ALPHA个节点信息
 		//如果DHT中的总节点数小于ALPHA，只返回总的数量
-		void get_node(const uint8_t Key[], std::unordered_set<int32_t>& PeerSet);
+		//如果整个路由表中存在状态为GOOD的Peer，就会返回至少一个状态为GOOD的Peer
+		//状态为GOOD的Peer当前与自己保持连接，自己应为请求方与其建立连接负责
+		void get_node(const uint8_t Key[],int32_t ReqPeerId, std::unordered_set<int32_t>& PeerSet);
 	private:
 		uint8_t						m_Key[KLEN_KEY] = { 0 };
 		KBucket						m_VecKBucket[160];

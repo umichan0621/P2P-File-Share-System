@@ -171,7 +171,7 @@ namespace handler
 			create_header(pSendBuf, PROTOCOL_ROUTING_SEARCH_ACK);
 			//读取几个路由表中距离最近的节点
 			std::unordered_set<int32_t> PeerSet;
-			g_pRoutingTable->get_node(pKey, PeerSet);
+			g_pRoutingTable->get_node(pKey, ReqPeerId, PeerSet);
 			//当前节点能够找到距离较近的其他节点，应该返回数据
 			//协议格式:[固定头部(2B)] +[PID/CID(20B)]+(0-α个)[[sockaddr(28B)]+[Status[1B]]
 			if (false == PeerSet.empty())

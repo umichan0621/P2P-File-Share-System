@@ -39,13 +39,16 @@ namespace peer
 		//走到这里表示不会加入新节点，也不会淘汰旧节点
 	}
 
-	void KBucket::get_node(const uint8_t Key[], std::unordered_set<int32_t>& PeerList)
+	void KBucket::get_node(const uint8_t Key[], int32_t ReqPeerId, std::unordered_set<int32_t>& PeerList)
 	{
 		std::lock_guard<std::mutex> Lock(m_KBucketMutex);
 		std::map<uint8_t, int32_t> NearNodeMap;
 		for (auto& Node : m_NodeList)
 		{
-			NearNodeMap.insert({ Node.distance(Key) ,Node.peer_id() });
+			if (Node.peer_id() != ReqPeerId)
+			{
+				NearNodeMap.insert({ Node.distance(Key) ,Node.peer_id() });
+			}
 		}
 		for (auto& It : NearNodeMap)
 		{
@@ -55,5 +58,22 @@ namespace peer
 				return;
 			}
 		}
+	}
+
+	int32_t KBucket::get_online_node(int32_t ReqPeerId)
+	{
+		std::lock_guard<std::mutex> Lock(m_KBucketMutex);
+		for (auto& Node : m_NodeList)
+		{
+			int32_t PeerId = Node.peer_id();
+			if (PeerId != ReqPeerId)
+			{
+				if (GOOD == g_pPeerManager->peer_status(PeerId))
+				{
+					return PeerId;
+				}
+			}
+		}
+		return -1;
 	}
 }

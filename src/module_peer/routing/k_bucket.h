@@ -1,6 +1,6 @@
 ﻿/***********************************************************************/
-/* 名称:													   */
-/* 说明:										   */
+/* 名称:K桶															   */
+/* 说明:存放与自己PID指定距离的所有节点信息							   */
 /* 创建时间:2022/01/07												   */
 /* Email:umichan0621@gmail.com									       */
 /***********************************************************************/
@@ -30,8 +30,11 @@ namespace peer
 		//向当前K桶加入节点
 		void add_node(Node& N);
 
-		//输入一个Key，返回当前K桶中的所有节点，并按照距离排序
-		void get_node(const uint8_t Key[], std::unordered_set<int32_t>& PeerList);
+		//输入一个Key，返回当前K桶中与ReqPeerId不同的所有节点，并按照距离排序
+		void get_node(const uint8_t Key[], int32_t ReqPeerId, std::unordered_set<int32_t>& PeerList);
+
+		//获取当前K桶中一个与ReqPeerId不同的在线节点
+		int32_t get_online_node(int32_t ReqPeerId);
 	private:
 		std::list<Node>		m_NodeList;
 		std::mutex			m_KBucketMutex;

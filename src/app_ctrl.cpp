@@ -26,7 +26,7 @@ static const char* DATA_BASE_PATH = "../test_release.db";
 //Tracker列表
 static std::vector<std::pair<const char*, uint16_t>> TRACKER_LIST = {
 	//#ifdef _DEBUG
-	{"121.5.179.213",2248}
+	{"121.5.179.213",2249}
 	//#else
 	//{"127.0.0.1",2345}
 	//#endif
@@ -730,7 +730,7 @@ bool AppCtrl::try_add_download_file(std::string& strLink, std::string& strPath)
 			create_header(SearchBuf, PROTOCOL_ROUTING_SEARCH_REQ);
 			memcpy(&SearchBuf[2], &SHA1Struct, KLEN_KEY);
 			std::unordered_set<int32_t> PeerSet;
-			g_pRoutingTable->get_node(SHA1Struct.Hash, PeerSet);
+			g_pRoutingTable->get_node(SHA1Struct.Hash,-1, PeerSet);
 			LOG_ERROR << PeerSet.size();
 			for (auto& PeerId : PeerSet)
 			{
@@ -802,7 +802,7 @@ void AppCtrl::thread_add_share_file(std::string& strRemark, std::string& strPath
 		create_header(SearchBuf, PROTOCOL_ROUTING_SEARCH_REQ);
 		memcpy(&SearchBuf[2], &SHA1Struct, KLEN_KEY);
 		std::unordered_set<int32_t> PeerSet;
-		g_pRoutingTable->get_node(SHA1Struct.Hash, PeerSet);
+		g_pRoutingTable->get_node(SHA1Struct.Hash,-1, PeerSet);
 		for (auto& PeerId : PeerSet)
 		{
 			uint16_t SessionId = g_pPeerManager->session_id(PeerId);
