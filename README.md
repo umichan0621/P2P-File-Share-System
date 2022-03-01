@@ -6,5 +6,4 @@
 
 ![download](https://github.com/umichan0621/P2P-File-Share-System/blob/main/picture/download.png)
 ![my_file](https://github.com/umichan0621/P2P-File-Share-System/blob/main/picture/my_file.png)
-![download_link](https://github.com/umichan0621/P2P-File-Share-System/blob/main/picture/download_link.png)
 ![share_file](https://github.com/umichan0621/P2P-File-Share-System/blob/main/picture/share_file.png)
