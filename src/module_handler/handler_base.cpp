@@ -130,7 +130,7 @@ namespace handler
 				bool res1 = peer::PeerManager::info(CurPeerAddr, strIP, Port);
 				if (false != res1)
 				{
-					LOG_TRACE << "Connect to " << strIP << ":" << Port;
+					LOG_TRACE << "Connect to [" << strIP << ":" << Port<<"] successfully.";
 				}
 			}//TEST
 		}
@@ -163,7 +163,7 @@ namespace handler
 		}
 		PeerAddress ReqPeerAddr = { 0 }, TargetPeerAddr = { 0 };
 		pReqSession->get_peer_addr(ReqPeerAddr);
-		memcpy(&TargetPeerAddr, &pMessage[2], KSOCKADDR_LEN_V6);
+		memcpy(&TargetPeerAddr, &pMessage[BASE_HEADER_LEN], KSOCKADDR_LEN_V6);
 		uint16_t TargetSessionId = g_pPeerManager->session_id(TargetPeerAddr);
 
 		{//Test
@@ -174,7 +174,7 @@ namespace handler
 			bool res2 = peer::PeerManager::info(TargetPeerAddr, strIP1, Port1);
 			if (res1 && res2)
 			{
-				LOG_TRACE << strIP << ":" << Port << " want to connect " << strIP1 << ":" << Port1;
+				LOG_TRACE << "["<<strIP << ":" << Port << "] want to connect [" << strIP1 << ":" << Port1<<"]";
 			}
 		}//Test
 
@@ -182,14 +182,14 @@ namespace handler
 		if (0 == TargetSessionId || ERROR_SESSION_ID == TargetSessionId)
 		{
 			create_header(pMessage, PROTOCOL_BASE_CONNECT_HELP_RFS);
-			pReqSession->send_reliable(pMessage, 2 + KSOCKADDR_LEN_V6);
+			pReqSession->send_reliable(pMessage, BASE_HEADER_LEN + KSOCKADDR_LEN_V6);
 			return DO_NOTHING;
 		}
 		net::Session* pTargetSession = g_pSessionManager->session(TargetSessionId);
 		if (nullptr == pTargetSession)
 		{
 			create_header(pMessage, PROTOCOL_BASE_CONNECT_HELP_RFS);
-			pReqSession->send_reliable(pMessage, 2 + KSOCKADDR_LEN_V6);
+			pReqSession->send_reliable(pMessage, BASE_HEADER_LEN + KSOCKADDR_LEN_V6);
 			return DO_NOTHING;
 		}
 
@@ -199,9 +199,9 @@ namespace handler
 		pReqSession->send_reliable(pMessage, Len);
 
 		create_header(pMessage, PROTOCOL_BASE_PING_HELP);
-		memcpy(&pMessage[2], &ReqPeerAddr, KSOCKADDR_LEN_V6);
+		memcpy(&pMessage[BASE_HEADER_LEN], &ReqPeerAddr, KSOCKADDR_LEN_V6);
 		//通知目标节点协助UDP打洞
-		pTargetSession->send_reliable(pMessage, 2 + KSOCKADDR_LEN_V6);
+		pTargetSession->send_reliable(pMessage, BASE_HEADER_LEN + KSOCKADDR_LEN_V6);
 		//TEST
 		{
 			std::string strIP, strIP1;
@@ -210,7 +210,7 @@ namespace handler
 			bool res2 = peer::PeerManager::info(TargetPeerAddr, strIP1, Port1);
 			if (res1 && res2)
 			{
-				LOG_TRACE << "Try help " << strIP << ":" << Port << " connect " << strIP1 << ":" << Port1;
+				LOG_TRACE << "Try help [" << strIP << ":" << Port << "] connect [" << strIP1 << ":" << Port1<<"]";
 			}
 		}
 		//TEST
@@ -224,9 +224,9 @@ namespace handler
 		//继续尝试连接
 		PeerAddress TargetPeerAddr = { 0 };
 		memcpy(&TargetPeerAddr, &pMessage[BASE_HEADER_LEN], KSOCKADDR_LEN_V6);
-		const uint8_t* pKey = (uint8_t*)&pMessage[30];
+		const uint8_t* pKey = (uint8_t*)&pMessage[BASE_HEADER_LEN+ KSOCKADDR_LEN_V6];
 		base::SHA1 CID = { 0 };
-		memcpy(&CID, pKey, 20);
+		memcpy(&CID, pKey, KLEN_KEY);
 		g_pSessionManager->connect_peer(CID, TargetPeerAddr);
 	
 		{//TEST
@@ -241,10 +241,10 @@ namespace handler
 				bool res2 = peer::PeerManager::info(TargetPeerAddr, strIP1, Port1);
 				if (res1 && res2)
 				{
-					LOG_TRACE << strIP << ":" << Port << " will help me to connect " << strIP1 << ":" << Port1;
+					LOG_TRACE << "["<<strIP << ":" << Port << "] will help me to connect [" << strIP1 << ":" << Port1<<"]";
 				}
 			}
-		}//TEST
+		}
 		
 		return DO_NOTHING;
 	}
@@ -276,6 +276,7 @@ namespace handler
 
 	int8_t HandlerBase::handle_ping_ack(uint16_t& SessionId, char* pMessage, uint16_t& Len)
 	{
+		LOG_ERROR << "PING ACK";
 		//对端节点发送PING_ACK，表示本机与对端节点可以建立直接连接并通信
 		net::Session* pCurSession = g_pSessionManager->session(SessionId);
 		if (nullptr != pCurSession)
@@ -291,6 +292,7 @@ namespace handler
 
 	int8_t HandlerBase::handle_ping_req(uint16_t& SessionId, char* pMessage, uint16_t& Len)
 	{
+		LOG_ERROR << "PING ME";
 		//对端节点发送PING_REQ，尝试ping本机，直接回复ACK
 		create_header(pMessage, PROTOCOL_BASE_PING_ACK);
 		//当前状态未连接
@@ -311,7 +313,7 @@ namespace handler
 			bool res1 = peer::PeerManager::info(TargetPeerAddr, strIP, Port);
 			if (res1)
 			{
-				LOG_TRACE << "Ping " << strIP << ":" << Port << " to help it to connect me.";
+				LOG_TRACE << "Ping [" << strIP << ":" << Port << "] to help it to connect me.";
 			}
 		}
 		//TEST

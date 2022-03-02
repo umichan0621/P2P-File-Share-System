@@ -38,22 +38,18 @@ enum FILE_STATUS
 
 //允许连接数 = 65534(1-65534)
 constexpr uint16_t	MAX_CONNECTION_NUM = 1024;
-
-
-//缓存大小设定为Internet的MTU最小值 = 548 Byte(576-8-20)
-//超过当前大小UDP数据包可能会分片，应完全避免
 constexpr int32_t	MIN_MTU = 1400;
 constexpr int32_t	DEFAULT_MTU = 1400;
 constexpr int32_t	ADDR_LEN_IPV6 = 28;				//IPv6 Sockaddr数据结构长度
-constexpr uint32_t	HEARTBEAT_CLOCK = 10*1000 ;	//心跳包频率
+constexpr uint32_t	HEARTBEAT_CLOCK = 10*1000 ;		//心跳包频率
 constexpr uint32_t	PING_CLOCK = 500;				//ping的频率
 constexpr uint32_t	PING_TIMEOUT_COUNT = 10;		//ping的次数
 
 constexpr uint64_t	PROGRESS_REFRESH_FREQUENCY = 1000;
-constexpr uint32_t	DOWNLOAD_RATE = 10;//30MB/s
+constexpr uint32_t	DOWNLOAD_RATE = 10;				//30MB/s
 constexpr uint32_t	PING_RTT = 200;					//连接时ping和connect时发送的频率
 constexpr uint16_t	HEARTBEAT_TIMEOUT_COUNT = 3;
-constexpr uint16_t	CONNECT_TIMEOUT_COUNT = 6;
+constexpr uint16_t	CONNECT_TIMEOUT_COUNT = 6;		//连接无NAT设备时超时的次数
 constexpr uint16_t	NAT_PROBE_TIMEOUT_COUNT = 10;
 //文件各个组成部分的大小
 constexpr uint16_t		FULL_BLOCK_SIZE		= 0x00000200;		//块   = 512B = 2^9B

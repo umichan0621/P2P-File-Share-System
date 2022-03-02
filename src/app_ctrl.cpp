@@ -26,7 +26,7 @@ static const char* DATA_BASE_PATH = "../test_release.db";
 //Tracker列表
 static std::vector<std::pair<const char*, uint16_t>> TRACKER_LIST = {
 	//#ifdef _DEBUG
-	{"121.5.179.213",2249}
+	{"121.5.179.213",2238}
 	//#else
 	//{"127.0.0.1",2345}
 	//#endif
@@ -155,7 +155,7 @@ void AppCtrl::start()
 	}
 	m_pThreadPool->add_task(std::bind(&AppCtrl::thread_loop_search, this));
 	////启动循环下载线程
-	//m_pThreadPool->add_task(std::bind(&AppCtrl::thread_loop_download, this));
+	m_pThreadPool->add_task(std::bind(&AppCtrl::thread_loop_download, this));
 	m_pMoudleGui->show();
 
 #else//客户端
@@ -553,6 +553,7 @@ void AppCtrl::thread_loop_download()
 				continue;
 			}
 			//随机一个Peer
+			LOG_ERROR << PartnerList.size();
 			int32_t RanPos = rand() % PartnerList.size();
 			for (int32_t i = 0; i < PartnerList.size(); ++i)
 			{
