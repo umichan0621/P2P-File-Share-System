@@ -65,7 +65,7 @@ namespace handler
 		std::string strIpAddr;
 		uint16_t Port;
 		pCurSession->info(strIpAddr, Port);
-		LOG_TRACE << "New Connection, Session ID = " << SessionId << ", IP:Port = " << strIpAddr << ":" << Port;
+		LOG_TRACE << "New Connection ["<< strIpAddr << ":" << Port<<"], Session ID = " << SessionId;
 		return true;
 	}
 

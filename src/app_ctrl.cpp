@@ -26,7 +26,7 @@ static const char* DATA_BASE_PATH = "../test_release.db";
 //Tracker列表
 static std::vector<std::pair<const char*, uint16_t>> TRACKER_LIST = {
 	//#ifdef _DEBUG
-	{"121.5.179.213",2238}
+	{"121.5.179.213",2239}
 	//#else
 	//{"127.0.0.1",2345}
 	//#endif
@@ -149,7 +149,7 @@ void AppCtrl::start()
 	//依次连接Tracker
 	for (auto& Tracker : TRACKER_LIST)
 	{
-		LOG_ERROR <<"Tracker<"<< Tracker.first << ":" << Tracker.second<<">";
+		LOG_DEBUG <<"Tracker<"<< Tracker.first << ":" << Tracker.second<<">";
 		uint16_t Session = g_pSessionManager->connect_tracker(Tracker.first, Tracker.second);
 
 	}
@@ -483,7 +483,7 @@ void AppCtrl::thread_loop_download()
 	uint64_t LastRefreshTime = base::now_milli() - PROGRESS_REFRESH_FREQUENCY;
 	uint32_t BaseSleepTime = (1000 * 1000) >> 5;
 	//构造发送的数据包头部
-	char DLReqBuf[30] = { 0 };
+	char DLReqBuf[BASE_HEADER_LEN + KLEN_KEY+8] = { 0 };
 	create_header(DLReqBuf, PROTOCOL_FILE_FRAGMENT_REQ);
 	high_resolution_clock::time_point WakeUpTime = high_resolution_clock::now();
 	for (;;)
@@ -542,8 +542,8 @@ void AppCtrl::thread_loop_download()
 		{//获取下载任务并向Peer请求
 			pDownloadFile->full_sha1(FileSHA1);
 			//写入文件SHA1值和FragmentStart
-			memcpy(&DLReqBuf[2], &FileSHA1, 20);
-			memcpy(&DLReqBuf[22], &FragmentStart, 8);
+			memcpy(&DLReqBuf[BASE_HEADER_LEN], &FileSHA1, KLEN_KEY);
+			memcpy(&DLReqBuf[BASE_HEADER_LEN+ KLEN_KEY], &FragmentStart, 8);
 			PartnerList.clear();
 
 			g_pPartnerTable->search_cid(FileSHA1, PartnerList);
@@ -553,7 +553,6 @@ void AppCtrl::thread_loop_download()
 				continue;
 			}
 			//随机一个Peer
-			LOG_ERROR << PartnerList.size();
 			int32_t RanPos = rand() % PartnerList.size();
 			for (int32_t i = 0; i < PartnerList.size(); ++i)
 			{
@@ -562,7 +561,7 @@ void AppCtrl::thread_loop_download()
 				net::Session* pCurSession = g_pSessionManager->session(SessionId);
 				if (nullptr != pCurSession)
 				{
-					pCurSession->send_reliable(DLReqBuf, 30);
+					pCurSession->send_reliable(DLReqBuf, BASE_HEADER_LEN + KLEN_KEY+8);
 					FileCtrl.reset();
 					break;
 				}
@@ -590,9 +589,9 @@ void AppCtrl::thread_loop_search()
 	memcpy(&RegisterBuf[2], g_pRoutingTable->pid(), KLEN_KEY);
 
 	{//TEST
-		std::string str;
-		base::sha1_value(g_pRoutingTable->pid(), str);
-		LOG_ERROR << "Current PID:" << str;
+		//std::string str;
+		//base::sha1_value(g_pRoutingTable->pid(), str);
+		//LOG_ERROR << "Current PID:" << str;
 	}//TEST
 	
 	for (;;)
@@ -624,7 +623,7 @@ void AppCtrl::thread_loop_search()
 				Pos += KLEN_KEY;
 			}
 			{//Test
-				LOG_DEBUG << "Search Session:" << SessionId;
+				//LOG_DEBUG << "Search Session:" << SessionId;
 			}//Test
 				
 			pCurSession->send_reliable(RegisterBuf, 2 + KLEN_KEY);

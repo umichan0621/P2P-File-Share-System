@@ -9,9 +9,6 @@ namespace peer
 
 	void PartnerTable::add_cid(const base::SHA1& CID)
 	{
-		std::string str;
-		base::sha1_value(CID, str);
-		LOG_DEBUG << "[PARTNER] CID:" << str;
 		std::unique_lock<std::mutex> Lock(m_PartnerMutex);
 		//已经记录
 		if (0 == m_PartnerMap.count(CID))

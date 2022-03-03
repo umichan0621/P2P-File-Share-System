@@ -276,7 +276,6 @@ namespace handler
 
 	int8_t HandlerBase::handle_ping_ack(uint16_t& SessionId, char* pMessage, uint16_t& Len)
 	{
-		LOG_ERROR << "PING ACK";
 		//对端节点发送PING_ACK，表示本机与对端节点可以建立直接连接并通信
 		net::Session* pCurSession = g_pSessionManager->session(SessionId);
 		if (nullptr != pCurSession)
@@ -292,7 +291,6 @@ namespace handler
 
 	int8_t HandlerBase::handle_ping_req(uint16_t& SessionId, char* pMessage, uint16_t& Len)
 	{
-		LOG_ERROR << "PING ME";
 		//对端节点发送PING_REQ，尝试ping本机，直接回复ACK
 		create_header(pMessage, PROTOCOL_BASE_PING_ACK);
 		//当前状态未连接
